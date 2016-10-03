@@ -1,0 +1,17 @@
+{{define "base"}}
+<html>
+
+<head>
+  <title>{{.Title}}</title>
+</head>
+
+<body>
+  <h1>stdout</h1>
+  <h2>{{.Title}}</h2>
+  <div id="content">
+    {{template "content" .}}
+  </div>
+</body>
+
+</html>
+{{end}}
