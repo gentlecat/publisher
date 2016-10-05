@@ -3,6 +3,40 @@
 
 <head>
   <title>{{.Title}}</title>
+  <link href="https://fonts.googleapis.com/css?family=Inconsolata:400,700" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+      color: #444444;
+      background-color: #ffffff;
+      font-family: 'Inconsolata', sans-serif;
+      font-size: 16px;
+      max-width: 800px;
+    }
+    a {
+      color: #2194ce;
+      text-decoration: none;
+      border-bottom: 1px dashed #2194ce;
+    }
+    a:hover {
+      color: #05161e;
+      text-decoration: none;
+      border-bottom: 1px dashed #05161e;
+    }
+    p {
+      line-height: 20px;
+    }
+    code {
+      font-family: monospace;
+      background: #F0F0F0;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/styles/default.min.css" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/languages/bash.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/languages/yaml.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/languages/dockerfile.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
 </head>
 
 <body>
