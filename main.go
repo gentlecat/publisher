@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -12,14 +9,40 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
+	"regexp"
 )
 
 const (
+	contentLoc   = "content/"
+	templFileLoc = contentLoc + "templates/"
+	staticLoc    = contentLoc + "static/"
+	storiesLoc   = contentLoc + "stories/"
+
 	markdownFileFormat = "md"
-	contentLoc         = "content/"
-	templFileLoc       = contentLoc + "templates/"
-	staticLoc          = contentLoc + "static/"
-	storiesLoc         = contentLoc + "stories/"
+	markdownExtensions = 0 |
+		blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
+		blackfriday.EXTENSION_TABLES |
+		blackfriday.EXTENSION_FENCED_CODE |
+		blackfriday.EXTENSION_AUTO_HEADER_IDS |
+		blackfriday.EXTENSION_AUTOLINK |
+		blackfriday.EXTENSION_STRIKETHROUGH |
+		blackfriday.EXTENSION_SPACE_HEADERS |
+		blackfriday.EXTENSION_HEADER_IDS |
+		blackfriday.EXTENSION_FOOTNOTES |
+		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
+		blackfriday.EXTENSION_DEFINITION_LISTS
+	commonHtmlFlags = 0 |
+		blackfriday.HTML_USE_XHTML |
+		blackfriday.HTML_FOOTNOTE_RETURN_LINKS |
+		blackfriday.HTML_TOC |
+		blackfriday.HTML_USE_SMARTYPANTS |
+		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
+		blackfriday.HTML_SMARTYPANTS_DASHES |
+		blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
 )
 
 var (
@@ -86,8 +109,12 @@ func check(err error) {
 func readStory(fileName string) template.HTML {
 	data, err := ioutil.ReadFile(storiesLoc + fileName)
 	check(err)
-	unsafe := blackfriday.MarkdownCommon(data)
-	return template.HTML(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
+
+	renderer := blackfriday.HtmlRenderer(commonHtmlFlags, "", "")
+	unsafe := blackfriday.Markdown(data, renderer, markdownExtensions)
+	policy := bluemonday.UGCPolicy()
+	policy.AllowAttrs("class").Matching(regexp.MustCompile("^language-[a-zA-Z0-9]+$")).OnElements("code")
+	return template.HTML(policy.SanitizeBytes(unsafe))
 }
 
 func makeRouter() *mux.Router {
