@@ -7,20 +7,22 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
+	"os"
 	"regexp"
 )
 
 const (
-	contentLoc   = "content/"
-	templFileLoc = contentLoc + "templates/"
-	staticLoc    = contentLoc + "static/"
-	storiesLoc   = contentLoc + "stories/"
+	contentLoc    = "content/"
+	metadatalFile = contentLoc + "metadata.json"
+	storiesLoc    = contentLoc + "stories/"
+	templFileLoc  = contentLoc + "templates/"
+	staticLoc     = contentLoc + "static/"
 
 	markdownFileFormat = "md"
 	markdownExtensions = 0 |
@@ -38,7 +40,6 @@ const (
 	commonHtmlFlags = 0 |
 		blackfriday.HTML_USE_XHTML |
 		blackfriday.HTML_FOOTNOTE_RETURN_LINKS |
-		blackfriday.HTML_TOC |
 		blackfriday.HTML_USE_SMARTYPANTS |
 		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
 		blackfriday.HTML_SMARTYPANTS_DASHES |
@@ -55,7 +56,19 @@ type Page struct {
 	Content template.HTML
 	Data    interface{}
 }
+
 type StoryURLPath string
+
+type Metadata struct {
+	Stories []StoryMetadata `json:"stories"`
+}
+
+type StoryMetadata struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Date  string `json:"date"`
+}
+
 type Story struct {
 	Title        string
 	CreationTime time.Time
@@ -74,23 +87,21 @@ func main() {
 		templFileLoc+"base.html",
 	))
 
-	log.Println("Reading stories...")
-	files, err := ioutil.ReadDir(storiesLoc)
+	log.Println("Parsing metadata...")
+	metadataJSON, err := ioutil.ReadFile(metadatalFile)
+	check(err)
+	var metadata Metadata
+	err = json.Unmarshal(metadataJSON, &metadata)
 	check(err)
 
-	format := strings.ToLower("." + markdownFileFormat)
-	formatLen := len(format)
-	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(strings.ToLower(file.Name()), format) {
-			if len(file.Name())-formatLen < 1 {
-				log.Fatal("Strange file name: ", file.Name())
-			}
-			name := file.Name()[:len(file.Name())-formatLen]
-			log.Printf(" - %s", name)
-			// TODO: Figure out how to set up titles, timestamps.
-			stories[StoryURLPath(name)] = Story{
-				Content: readStory(file.Name()),
-			}
+	for _, story := range metadata.Stories {
+		storyPath := storiesLoc + story.Name + "." + markdownFileFormat
+		if _, err := os.Stat(storyPath); os.IsNotExist(err) {
+			log.Fatalf("Can't find story: %s", story.Name)
+		}
+		stories[StoryURLPath(story.Name)] = Story{
+			Title:   story.Title,
+			Content: readStory(storyPath),
 		}
 	}
 
@@ -106,8 +117,8 @@ func check(err error) {
 }
 
 // readStory parses a story in markdown format and converts it to HTML.
-func readStory(fileName string) template.HTML {
-	data, err := ioutil.ReadFile(storiesLoc + fileName)
+func readStory(filePath string) template.HTML {
+	data, err := ioutil.ReadFile(filePath)
 	check(err)
 
 	renderer := blackfriday.HtmlRenderer(commonHtmlFlags, "", "")
@@ -121,6 +132,8 @@ func makeRouter() *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/{name}", storyHandler)
+	const staticPathPrefix = "/static"
+	r.PathPrefix(staticPathPrefix).Handler(http.StripPrefix(staticPathPrefix, http.FileServer(http.Dir(staticLoc))))
 	return r
 }
 

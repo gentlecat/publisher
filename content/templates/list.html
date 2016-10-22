@@ -1,7 +1,7 @@
 {{define "content"}}
-<ol>
+<ul>
 {{range .Data}}
-  <li><a href="/{{.Path}}">{{.Path}}</a></li>
+  <li><a href="/{{.Path}}">{{.Story.Title}}</a></li>
 {{end}}
-</ol>
+</ul>
 {{end}}
