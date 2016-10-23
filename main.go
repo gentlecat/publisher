@@ -1,19 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
-
-	"encoding/json"
-	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
 	"os"
 	"path/filepath"
 	"regexp"
