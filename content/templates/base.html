@@ -2,7 +2,11 @@
 <html>
 
 <head>
-  <title>{{.Title}}</title>
+  {{if .Title}}
+    <title>{{.Title}} - stdout - Roman Tsukanov</title>
+  {{else}}
+    <title>stdout - Roman Tsukanov</title>
+  {{end}}
   <link href="https://fonts.googleapis.com/css?family=Inconsolata:400,700" rel="stylesheet">
   <style>
     body {

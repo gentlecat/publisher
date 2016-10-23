@@ -15,6 +15,7 @@ import (
 	"github.com/russross/blackfriday"
 	"os"
 	"regexp"
+	"time"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 	storiesLoc    = contentLoc + "stories/"
 	templFileLoc  = contentLoc + "templates/"
 	staticLoc     = contentLoc + "static/"
+	dateForm = "2006-Jan-02" // UTC
 
 	markdownFileFormat = "md"
 	markdownExtensions = 0 |
@@ -53,6 +55,7 @@ var (
 
 type Page struct {
 	Title   string
+	Date    time.Time
 	Content template.HTML
 	Data    interface{}
 }
@@ -64,16 +67,16 @@ type Metadata struct {
 }
 
 type StoryMetadata struct {
-	Name  string `json:"name"`
-	Title string `json:"title"`
-	Date  string `json:"date"`
+	Name    string `json:"name"`
+	Title   string `json:"title"`
+	DateStr string `json:"date"`
 }
 
 type Story struct {
-	Title        string
-	CreationTime time.Time
-	LastEditTime time.Time
-	Content      template.HTML
+	Title   string
+	Date    time.Time
+	Content template.HTML
+}
 }
 
 func main() {
@@ -99,8 +102,11 @@ func main() {
 		if _, err := os.Stat(storyPath); os.IsNotExist(err) {
 			log.Fatalf("Can't find story: %s", story.Name)
 		}
+		date, err := time.Parse(dateForm, story.DateStr)
+		check(err)
 		stories[StoryURLPath(story.Name)] = Story{
 			Title:   story.Title,
+			Date:    date,
 			Content: readStory(storyPath),
 		}
 	}
@@ -151,8 +157,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		items = append(items, ListItem{Path: path, Story: story})
 	}
 	err := renderTemplate("list", w, Page{
-		Title: "stdout",
-		Data:  items,
+		Data: items,
 	})
 	check(err)
 }
@@ -162,6 +167,7 @@ func storyHandler(w http.ResponseWriter, r *http.Request) {
 	if story, ok := stories[StoryURLPath(vars["name"])]; ok {
 		err := renderTemplate("content", w, Page{
 			Title:   story.Title,
+			Date:    story.Date,
 			Content: story.Content,
 		})
 		check(err)
