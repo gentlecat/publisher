@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -45,6 +46,9 @@ const (
 )
 
 var (
+	listenHost = flag.String("host", "127.0.0.1", "Host to listen on")
+	listenPort = flag.Int("port", 8080, "Port to listen on")
+
 	templates = make(map[string]*template.Template)
 	stories   = make(map[StoryURLPath]Story)
 
@@ -89,6 +93,7 @@ func updateContentLoc(directoryPath string) {
 }
 
 func main() {
+	flag.Parse()
 	if customContentLoc := os.Getenv("CONTENT_LOCATION"); customContentLoc != "" {
 		updateContentLoc(customContentLoc)
 	}
@@ -124,8 +129,9 @@ func main() {
 		}
 	}
 
-	fmt.Println("Starting server on localhost:8080...")
-	err = http.ListenAndServe(":8080", makeRouter())
+	listenAddr := fmt.Sprintf("%s:%d", *listenHost, *listenPort)
+	fmt.Printf("Starting server on %s...\n", listenAddr)
+	err = http.ListenAndServe(listenAddr, makeRouter())
 	check(err)
 }
 
