@@ -14,16 +14,12 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
 	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 )
 
 const (
-	contentLoc    = "content/"
-	metadatalFile = contentLoc + "metadata.json"
-	storiesLoc    = contentLoc + "stories/"
-	templFileLoc  = contentLoc + "templates/"
-	staticLoc     = contentLoc + "static/"
 	dateForm = "2006-Jan-02" // UTC
 
 	markdownFileFormat = "md"
@@ -51,6 +47,12 @@ const (
 var (
 	templates = make(map[string]*template.Template)
 	stories   = make(map[StoryURLPath]Story)
+
+	contentLoc    = "content/"
+	metadatalFile = contentLoc + "metadata.json"
+	storiesLoc    = contentLoc + "stories/"
+	templFileLoc  = contentLoc + "templates/"
+	staticLoc     = contentLoc + "static/"
 )
 
 type Page struct {
@@ -77,17 +79,28 @@ type Story struct {
 	Date    time.Time
 	Content template.HTML
 }
+
+func updateContentLoc(directoryPath string) {
+	contentLoc = filepath.Clean(directoryPath)
+	metadatalFile = filepath.Join(contentLoc, "metadata.json")
+	storiesLoc = filepath.Join(contentLoc, "stories")
+	templFileLoc = filepath.Join(contentLoc, "templates")
+	staticLoc = filepath.Join(contentLoc, "static")
 }
 
 func main() {
+	if customContentLoc := os.Getenv("CONTENT_LOCATION"); customContentLoc != "" {
+		updateContentLoc(customContentLoc)
+	}
+
 	log.Println("Rendering templates...")
 	templates["content"] = template.Must(template.ParseFiles(
-		templFileLoc+"content.html",
-		templFileLoc+"base.html",
+		filepath.Join(templFileLoc, "content.html"),
+		filepath.Join(templFileLoc, "base.html"),
 	))
 	templates["list"] = template.Must(template.ParseFiles(
-		templFileLoc+"list.html",
-		templFileLoc+"base.html",
+		filepath.Join(templFileLoc, "list.html"),
+		filepath.Join(templFileLoc, "base.html"),
 	))
 
 	log.Println("Parsing metadata...")
@@ -98,7 +111,7 @@ func main() {
 	check(err)
 
 	for _, story := range metadata.Stories {
-		storyPath := storiesLoc + story.Name + "." + markdownFileFormat
+		storyPath := filepath.Join(storiesLoc, story.Name+"."+markdownFileFormat)
 		if _, err := os.Stat(storyPath); os.IsNotExist(err) {
 			log.Fatalf("Can't find story: %s", story.Name)
 		}
