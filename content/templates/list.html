@@ -1,7 +1,0 @@
-{{define "content"}}
-<ul>
-{{range .Data}}
-  <li>{{.Story.Date.Format "Jan 02, 2006"}} - <a href="/{{.Path}}">{{.Story.Title}}</a></li>
-{{end}}
-</ul>
-{{end}}
