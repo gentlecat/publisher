@@ -1,60 +1,37 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
+	"go.roman.zone/stories/story"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
+	"strings"
+	"sync"
 	"time"
-)
-
-const (
-	dateForm = "2006-Jan-02" // UTC
-
-	markdownFileFormat = "md"
-	markdownExtensions = 0 |
-		blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
-		blackfriday.EXTENSION_TABLES |
-		blackfriday.EXTENSION_FENCED_CODE |
-		blackfriday.EXTENSION_AUTO_HEADER_IDS |
-		blackfriday.EXTENSION_AUTOLINK |
-		blackfriday.EXTENSION_STRIKETHROUGH |
-		blackfriday.EXTENSION_SPACE_HEADERS |
-		blackfriday.EXTENSION_HEADER_IDS |
-		blackfriday.EXTENSION_FOOTNOTES |
-		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
-		blackfriday.EXTENSION_DEFINITION_LISTS
-	commonHtmlFlags = 0 |
-		blackfriday.HTML_USE_XHTML |
-		blackfriday.HTML_FOOTNOTE_RETURN_LINKS |
-		blackfriday.HTML_USE_SMARTYPANTS |
-		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
-		blackfriday.HTML_SMARTYPANTS_DASHES |
-		blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
 )
 
 var (
 	listenHost = flag.String("host", "127.0.0.1", "Host to listen on")
 	listenPort = flag.Int("port", 8080, "Port to listen on")
 
-	templates = make(map[string]*template.Template)
-	stories   = make(map[StoryURLPath]Story)
+	storiesMutex sync.Mutex
+	stories      map[string]story.Story
 
-	contentLoc    = "content/"
-	metadatalFile = contentLoc + "metadata.json"
-	storiesLoc    = contentLoc + "stories/"
-	templFileLoc  = contentLoc + "templates/"
-	staticLoc     = contentLoc + "static/"
+	templatesMutex sync.Mutex
+	templates      map[string]*template.Template
+
+	contentLoc    = "content"
+	metadatalFile = filepath.Join(contentLoc, "metadata.json")
+	storiesLoc    = filepath.Join(contentLoc, "stories")
+	templLoc      = filepath.Join(contentLoc, "templates")
+	staticLoc     = filepath.Join(contentLoc, "static")
 )
 
 type Page struct {
@@ -64,91 +41,64 @@ type Page struct {
 	Data    interface{}
 }
 
-type StoryURLPath string
-
-type Metadata struct {
-	Stories []StoryMetadata `json:"stories"`
-}
-
-type StoryMetadata struct {
-	Name    string `json:"name"`
-	Title   string `json:"title"`
-	DateStr string `json:"date"`
-}
-
-type Story struct {
-	Title   string
-	Date    time.Time
-	Content template.HTML
-}
-
-func updateContentLoc(directoryPath string) {
-	contentLoc = filepath.Clean(directoryPath)
-	metadatalFile = filepath.Join(contentLoc, "metadata.json")
-	storiesLoc = filepath.Join(contentLoc, "stories")
-	templFileLoc = filepath.Join(contentLoc, "templates")
-	staticLoc = filepath.Join(contentLoc, "static")
-}
-
 func main() {
 	flag.Parse()
 	if customContentLoc := os.Getenv("CONTENT_LOCATION"); customContentLoc != "" {
 		updateContentLoc(customContentLoc)
 	}
 
-	log.Println("Rendering templates...")
-	templates["content"] = template.Must(template.ParseFiles(
-		filepath.Join(templFileLoc, "content.html"),
-		filepath.Join(templFileLoc, "base.html"),
-	))
-	templates["list"] = template.Must(template.ParseFiles(
-		filepath.Join(templFileLoc, "list.html"),
-		filepath.Join(templFileLoc, "base.html"),
-	))
+	log.Println("Initializing...")
+	renderTemplates(templLoc)
+	readStories(metadatalFile, storiesLoc)
 
-	log.Println("Parsing metadata...")
-	metadataJSON, err := ioutil.ReadFile(metadatalFile)
+	watcher, err := fsnotify.NewWatcher()
 	check(err)
-	var metadata Metadata
-	err = json.Unmarshal(metadataJSON, &metadata)
+	defer watcher.Close()
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				handleEvent(event)
+			case err := <-watcher.Errors:
+				log.Println("Watcher error:", err)
+			}
+		}
+	}()
+	err = watcher.Add(metadatalFile)
 	check(err)
-
-	for _, story := range metadata.Stories {
-		storyPath := filepath.Join(storiesLoc, story.Name+"."+markdownFileFormat)
-		if _, err := os.Stat(storyPath); os.IsNotExist(err) {
-			log.Fatalf("Can't find story: %s", story.Name)
-		}
-		date, err := time.Parse(dateForm, story.DateStr)
-		check(err)
-		stories[StoryURLPath(story.Name)] = Story{
-			Title:   story.Title,
-			Date:    date,
-			Content: readStory(storyPath),
-		}
-	}
+	err = watcher.Add(storiesLoc)
+	check(err)
+	err = watcher.Add(templLoc)
+	check(err)
 
 	listenAddr := fmt.Sprintf("%s:%d", *listenHost, *listenPort)
-	fmt.Printf("Starting server on %s...\n", listenAddr)
+	log.Printf("Starting server on %s...\n", listenAddr)
 	err = http.ListenAndServe(listenAddr, makeRouter())
 	check(err)
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
+func renderTemplates(location string) {
+	log.Println("Rendering templates...")
+	defer log.Println("Done!")
+	templatesMutex.Lock()
+	defer templatesMutex.Unlock()
+	templates = make(map[string]*template.Template)
+	templates["content"] = template.Must(template.ParseFiles(
+		filepath.Join(location, "content.html"),
+		filepath.Join(location, "base.html"),
+	))
+	templates["list"] = template.Must(template.ParseFiles(
+		filepath.Join(location, "list.html"),
+		filepath.Join(location, "base.html"),
+	))
 }
 
-// readStory parses a story in markdown format and converts it to HTML.
-func readStory(filePath string) template.HTML {
-	data, err := ioutil.ReadFile(filePath)
-	check(err)
-
-	renderer := blackfriday.HtmlRenderer(commonHtmlFlags, "", "")
-	unsafe := blackfriday.Markdown(data, renderer, markdownExtensions)
-	policy := bluemonday.UGCPolicy()
-	policy.AllowAttrs("class").Matching(regexp.MustCompile("^language-[a-zA-Z0-9]+$")).OnElements("code")
-	return template.HTML(policy.SanitizeBytes(unsafe))
+func readStories(metadatalFile, storiesLoc string) {
+	log.Println("Parsing stories...")
+	defer log.Println("Done!")
+	storiesMutex.Lock()
+	defer storiesMutex.Unlock()
+	stories = story.ReadStories(metadatalFile, storiesLoc)
 }
 
 func makeRouter() *mux.Router {
@@ -160,19 +110,17 @@ func makeRouter() *mux.Router {
 	return r
 }
 
-func renderTemplate(name string, wr io.Writer, data interface{}) error {
-	return templates[name].ExecuteTemplate(wr, "base", data)
-}
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	type ListItem struct {
-		Path  StoryURLPath
-		Story Story
+		Path  string
+		Story story.Story
 	}
 	var items []ListItem
-	for path, story := range stories {
-		items = append(items, ListItem{Path: path, Story: story})
+	storiesMutex.Lock()
+	for path, s := range stories {
+		items = append(items, ListItem{Path: path, Story: s})
 	}
+	storiesMutex.Unlock()
 	err := renderTemplate("list", w, Page{
 		Data: items,
 	})
@@ -180,15 +128,50 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func storyHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	if story, ok := stories[StoryURLPath(vars["name"])]; ok {
+	storiesMutex.Lock()
+	defer storiesMutex.Unlock()
+	if s, ok := stories[mux.Vars(r)["name"]]; ok {
 		err := renderTemplate("content", w, Page{
-			Title:   story.Title,
-			Date:    story.Date,
-			Content: story.Content,
+			Title:   s.Title,
+			Date:    s.Date,
+			Content: s.Content,
 		})
 		check(err)
 	} else {
 		http.NotFound(w, r)
+	}
+}
+
+func renderTemplate(name string, wr io.Writer, data interface{}) error {
+	templatesMutex.Lock()
+	defer templatesMutex.Unlock()
+	return templates[name].ExecuteTemplate(wr, "base", data)
+}
+
+func handleEvent(event fsnotify.Event) {
+	if (event.Op&fsnotify.Create == fsnotify.Create) ||
+		(event.Op&fsnotify.Remove == fsnotify.Remove) ||
+		(event.Op&fsnotify.Write == fsnotify.Write) {
+		log.Printf("Detected change in file: %s", event.Name)
+		if strings.HasPrefix(event.Name, templLoc) {
+			renderTemplates(templLoc)
+		}
+		if strings.HasPrefix(event.Name, metadatalFile) || strings.HasPrefix(event.Name, storiesLoc) {
+			readStories(metadatalFile, storiesLoc)
+		}
+	}
+}
+
+func updateContentLoc(directoryPath string) {
+	contentLoc = filepath.Clean(directoryPath)
+	metadatalFile = filepath.Join(contentLoc, "metadata.json")
+	storiesLoc = filepath.Join(contentLoc, "stories")
+	templLoc = filepath.Join(contentLoc, "templates")
+	staticLoc = filepath.Join(contentLoc, "static")
+}
+
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
 	}
 }
