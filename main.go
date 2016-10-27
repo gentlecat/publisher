@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/gorilla/mux"
-	"go.roman.zone/stories/story"
 	"html/template"
 	"io"
 	"log"
@@ -15,6 +12,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/mux"
+	"go.roman.zone/publisher/story"
 )
 
 var (

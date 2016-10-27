@@ -1,16 +1,17 @@
 package story
 
 import (
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
+	"encoding/json"
 	"html/template"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
-	"encoding/json"
-	"path/filepath"
-	"os"
+
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
 )
 
 const (
