@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	dateFormat = "2006-Jan-02" // UTC
+	dateFormat         = "2006-Jan-02" // UTC
 	markdownFileFormat = "md"
 
 	markdownExtensions = 0 |
@@ -50,14 +50,14 @@ type metadata struct {
 }
 
 type storyMetadata struct {
-	Name    string `json:"name"`
-	Title   string `json:"title"`
-	DateStr string `json:"date"`
+	Name      string `json:"name"`
+	Title     string `json:"title"`
+	DateStr   string `json:"date"`
+	Published bool   `json:"published"`
 }
 
 func ReadStories(metadataFile, storiesDir string) map[string]Story {
-	stories   := make(map[string]Story)
-
+	stories := make(map[string]Story)
 
 	metadataJSON, err := ioutil.ReadFile(metadataFile)
 	check(err)
@@ -70,12 +70,14 @@ func ReadStories(metadataFile, storiesDir string) map[string]Story {
 		if _, err := os.Stat(storyContentPath); os.IsNotExist(err) {
 			log.Fatalf("Can't find story: %s", story.Name)
 		}
-		date, err := time.Parse(dateFormat, story.DateStr)
-		check(err)
-		stories[story.Name] = Story{
-			Title:   story.Title,
-			Date:    date,
-			Content: parseStoryContent(storyContentPath),
+		if story.Published {
+			date, err := time.Parse(dateFormat, story.DateStr)
+			check(err)
+			stories[story.Name] = Story{
+				Title:   story.Title,
+				Date:    date,
+				Content: parseStoryContent(storyContentPath),
+			}
 		}
 	}
 
