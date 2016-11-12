@@ -36,6 +36,7 @@ var (
 )
 
 type Page struct {
+	Name    string
 	Title   string
 	Date    time.Time
 	Content template.HTML
@@ -133,6 +134,7 @@ func storyHandler(w http.ResponseWriter, r *http.Request) {
 	defer storiesMutex.Unlock()
 	if s, ok := stories[mux.Vars(r)["name"]]; ok {
 		err := renderTemplate("content", w, Page{
+			Name:    s.Name,
 			Title:   s.Title,
 			Date:    s.Date,
 			Content: s.Content,

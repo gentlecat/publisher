@@ -40,6 +40,7 @@ const (
 )
 
 type Story struct {
+	Name    string
 	Title   string
 	Date    time.Time
 	Content template.HTML
@@ -74,6 +75,7 @@ func ReadStories(metadataFile, storiesDir string) map[string]Story {
 			date, err := time.Parse(dateFormat, story.DateStr)
 			check(err)
 			stories[story.Name] = Story{
+				Name:    story.Name,
 				Title:   story.Title,
 				Date:    date,
 				Content: parseStoryContent(storyContentPath),
