@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -44,6 +45,7 @@ type Story struct {
 	Title   string
 	Date    time.Time
 	Content template.HTML
+	Tags    []string
 }
 
 type metadata struct {
@@ -51,10 +53,11 @@ type metadata struct {
 }
 
 type storyMetadata struct {
-	Name      string `json:"name"`
-	Title     string `json:"title"`
-	DateStr   string `json:"date"`
-	Published bool   `json:"published"`
+	Name      string   `json:"name"`
+	Title     string   `json:"title"`
+	DateStr   string   `json:"date"`
+	Published bool     `json:"published"`
+	Tags      []string `json:"tags"`
 }
 
 func ReadStories(metadataFile, storiesDir string) map[string]Story {
@@ -79,11 +82,20 @@ func ReadStories(metadataFile, storiesDir string) map[string]Story {
 				Title:   story.Title,
 				Date:    date,
 				Content: parseStoryContent(storyContentPath),
+				Tags:    lower_all(story.Tags),
 			}
 		}
 	}
 
 	return stories
+}
+
+func lower_all(strs []string) []string {
+	out := make([]string, len(strs))
+	for i, v := range strs {
+		out[i] = strings.ToLower(v)
+	}
+	return out
 }
 
 // ReadStory parses a story in markdown format and converts it to HTML.

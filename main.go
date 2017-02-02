@@ -40,6 +40,7 @@ type Page struct {
 	Title   string
 	Date    time.Time
 	Content template.HTML
+	Tags    []string
 	Data    interface{}
 }
 
@@ -138,6 +139,7 @@ func storyHandler(w http.ResponseWriter, r *http.Request) {
 			Title:   s.Title,
 			Date:    s.Date,
 			Content: s.Content,
+			Tags:    s.Tags,
 		})
 		check(err)
 	} else {
