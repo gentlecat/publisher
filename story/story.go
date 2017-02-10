@@ -13,6 +13,7 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
+	"sort"
 )
 
 const (
@@ -48,6 +49,12 @@ type Story struct {
 	Tags    []string
 }
 
+type storyDateSorter []Story
+
+func (a storyDateSorter) Len() int           { return len(a) }
+func (a storyDateSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a storyDateSorter) Less(i, j int) bool { return a[i].Date.After(a[j].Date) }
+
 type metadata struct {
 	Stories []storyMetadata `json:"stories"`
 }
@@ -60,16 +67,16 @@ type storyMetadata struct {
 	Tags      []string `json:"tags"`
 }
 
-func ReadStories(metadataFile, storiesDir string) map[string]Story {
-	stories := make(map[string]Story)
-
+func ReadStories(metadataFile, storiesDir string) []Story {
 	metadataJSON, err := ioutil.ReadFile(metadataFile)
 	check(err)
 	var metadata metadata
 	err = json.Unmarshal(metadataJSON, &metadata)
 	check(err)
 
-	for _, story := range metadata.Stories {
+	stories := make([]Story, len(metadata.Stories))
+
+	for i, story := range metadata.Stories {
 		storyContentPath := filepath.Join(storiesDir, story.Name+"."+markdownFileFormat)
 		if _, err := os.Stat(storyContentPath); os.IsNotExist(err) {
 			log.Fatalf("Can't find story: %s", story.Name)
@@ -77,7 +84,7 @@ func ReadStories(metadataFile, storiesDir string) map[string]Story {
 		if story.Published {
 			date, err := time.Parse(dateFormat, story.DateStr)
 			check(err)
-			stories[story.Name] = Story{
+			stories[i] = Story{
 				Name:    story.Name,
 				Title:   story.Title,
 				Date:    date,
@@ -87,6 +94,7 @@ func ReadStories(metadataFile, storiesDir string) map[string]Story {
 		}
 	}
 
+	sort.Sort(storyDateSorter(stories))
 	return stories
 }
 

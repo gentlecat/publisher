@@ -23,7 +23,8 @@ var (
 	listenPort = flag.Int("port", 8080, "Port to listen on")
 
 	storiesMutex sync.Mutex
-	stories      map[string]story.Story
+	stories      []story.Story
+	storiesIndex map[string]*story.Story
 
 	templatesMutex sync.Mutex
 	templates      map[string]*template.Template
@@ -102,6 +103,10 @@ func readStories(metadatalFile, storiesLoc string) {
 	storiesMutex.Lock()
 	defer storiesMutex.Unlock()
 	stories = story.ReadStories(metadatalFile, storiesLoc)
+	storiesIndex = make(map[string]*story.Story)
+	for _, s := range stories {
+		storiesIndex[s.Name] = &s
+	}
 }
 
 func makeRouter() *mux.Router {
@@ -116,12 +121,12 @@ func makeRouter() *mux.Router {
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	type ListItem struct {
 		Path  string
-		Story story.Story
+		Story *story.Story
 	}
 	var items []ListItem
 	storiesMutex.Lock()
-	for path, s := range stories {
-		items = append(items, ListItem{Path: path, Story: s})
+	for i, s := range stories {
+		items = append(items, ListItem{Path: s.Name, Story: &stories[i]})
 	}
 	storiesMutex.Unlock()
 	err := renderTemplate("list", w, Page{
@@ -133,7 +138,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func storyHandler(w http.ResponseWriter, r *http.Request) {
 	storiesMutex.Lock()
 	defer storiesMutex.Unlock()
-	if s, ok := stories[mux.Vars(r)["name"]]; ok {
+	if s, ok := storiesIndex[mux.Vars(r)["name"]]; ok {
 		err := renderTemplate("content", w, Page{
 			Name:    s.Name,
 			Title:   s.Title,
