@@ -74,9 +74,9 @@ func ReadStories(metadataFile, storiesDir string) []Story {
 	err = json.Unmarshal(metadataJSON, &metadata)
 	check(err)
 
-	stories := make([]Story, len(metadata.Stories))
+	var stories []Story
 
-	for i, story := range metadata.Stories {
+	for _, story := range metadata.Stories {
 		storyContentPath := filepath.Join(storiesDir, story.Name+"."+markdownFileFormat)
 		if _, err := os.Stat(storyContentPath); os.IsNotExist(err) {
 			log.Fatalf("Can't find story: %s", story.Name)
@@ -84,13 +84,13 @@ func ReadStories(metadataFile, storiesDir string) []Story {
 		if story.Published {
 			date, err := time.Parse(dateFormat, story.DateStr)
 			check(err)
-			stories[i] = Story{
+			stories = append(stories, Story{
 				Name:    story.Name,
 				Title:   story.Title,
 				Date:    date,
 				Content: parseStoryContent(storyContentPath),
 				Tags:    lower_all(story.Tags),
-			}
+			})
 		}
 	}
 

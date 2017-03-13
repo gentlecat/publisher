@@ -104,8 +104,8 @@ func readStories(metadatalFile, storiesLoc string) {
 	defer storiesMutex.Unlock()
 	stories = story.ReadStories(metadatalFile, storiesLoc)
 	storiesIndex = make(map[string]*story.Story)
-	for _, s := range stories {
-		storiesIndex[s.Name] = &s
+	for i, s := range stories {
+		storiesIndex[s.Name] = &stories[i]
 	}
 }
 
