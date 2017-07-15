@@ -76,7 +76,7 @@ func main() {
 	check(err)
 
 	listenAddr := fmt.Sprintf("%s:%d", *listenHost, *listenPort)
-	log.Printf("Starting server on %s...\n", listenAddr)
+	log.Printf("Starting server on http://%s...\n", listenAddr)
 	err = http.ListenAndServe(listenAddr, makeRouter())
 	check(err)
 }
