@@ -112,6 +112,7 @@ func readStories(metadatalFile, storiesLoc string) {
 func makeRouter() *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", indexHandler)
+	r.HandleFunc("/robots.txt", robotsHandler)
 	r.HandleFunc("/{name}", storyHandler)
 	const staticPathPrefix = "/static"
 	r.PathPrefix(staticPathPrefix).Handler(http.StripPrefix(staticPathPrefix, http.FileServer(http.Dir(staticLoc))))
@@ -150,6 +151,11 @@ func storyHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.NotFound(w, r)
 	}
+}
+
+func robotsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, `User-agent: *
+Disallow: /static/`)
 }
 
 func renderTemplate(name string, wr io.Writer, data interface{}) error {
