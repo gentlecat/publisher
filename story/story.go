@@ -7,11 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
-
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
 	"sort"
 )
@@ -110,12 +107,8 @@ func lower_all(strs []string) []string {
 func parseStoryContent(filePath string) template.HTML {
 	data, err := ioutil.ReadFile(filePath)
 	check(err)
-
 	renderer := blackfriday.HtmlRenderer(commonHtmlFlags, "", "")
-	unsafe := blackfriday.Markdown(data, renderer, markdownExtensions)
-	policy := bluemonday.UGCPolicy()
-	policy.AllowAttrs("class").Matching(regexp.MustCompile("^language-[a-zA-Z0-9]+$")).OnElements("code")
-	return template.HTML(policy.SanitizeBytes(unsafe))
+	return template.HTML(blackfriday.Markdown(data, renderer, markdownExtensions))
 }
 
 func check(err error) {
