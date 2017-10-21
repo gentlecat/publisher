@@ -21,6 +21,7 @@ import (
 var (
 	listenHost = flag.String("host", "127.0.0.1", "Host to listen on")
 	listenPort = flag.Int("port", 8080, "Port to listen on")
+	prodEnv    = flag.Bool("prod", false, "Whether the server is running in production environment")
 
 	contentLoc = "content"
 	storiesLoc = filepath.Join(contentLoc, "stories")
@@ -30,8 +31,8 @@ var (
 	stories      []story.Story
 	storiesMutex sync.Mutex
 
-	nameIndex map[string]*story.Story
-	tagsIndex map[string][]*story.Story
+	nameIndex       map[string]*story.Story
+	categoriesIndex map[string][]*story.Story
 
 	// TODO: See if template stuff and serving needs to be in separate modules
 	templates      map[string]*template.Template
@@ -40,13 +41,13 @@ var (
 
 // PageContext contains actual content that gets sent to a template.
 type PageContext struct {
-	Title   string
-	Content template.HTML
-	Data    interface{} // Additional data that doesn't fit into any other field.
+	Title string
+	Data  interface{} // Additional data that doesn't fit into any other field.
 	// TODO: Perhaps look into moving fields defined below into `Data`:
-	Name string
-	Tags []string
-	Date time.Time
+	Name       string
+	Content    template.HTML
+	Categories []string
+	Date       time.Time
 }
 
 func main() {
@@ -57,7 +58,7 @@ func main() {
 
 	log.Println("Initializing...")
 	renderTemplates(templLoc)
-	readStories(storiesLoc)
+	processStories(storiesLoc, *prodEnv) // drafts are ignored in production
 
 	watcher, err := fsnotify.NewWatcher()
 	check(err)
@@ -97,28 +98,32 @@ func renderTemplates(location string) {
 		filepath.Join(location, "list.html"),
 		filepath.Join(location, "base.html"),
 	))
+	templates["category"] = template.Must(template.ParseFiles(
+		filepath.Join(location, "category.html"),
+		filepath.Join(location, "base.html"),
+	))
 }
 
-func readStories(storiesLoc string) {
+func processStories(dir string, ignoreDrafts bool) {
 	log.Println("Parsing stories...")
 	defer log.Println("Done!")
 	storiesMutex.Lock()
 	defer storiesMutex.Unlock()
-	s, err := story.ReadAll(storiesLoc)
+	s, err := story.ReadAll(dir, ignoreDrafts)
 	check(err)
 	stories = s
 
 	// Generating indexes
 	nameIndex = make(map[string]*story.Story)
-	tagsIndex = make(map[string][]*story.Story)
+	categoriesIndex = make(map[string][]*story.Story)
 	for i, s := range stories {
 		nameIndex[s.Name] = &stories[i]
-		for _, t := range s.Tags {
-			tagsIndex[t] = append(tagsIndex[t], &stories[i])
+		for _, t := range s.Categories {
+			categoriesIndex[t] = append(categoriesIndex[t], &stories[i])
 		}
 	}
 	log.Printf("Names in the index: %d", len(nameIndex))
-	log.Printf("Tags in the index: %d", len(tagsIndex))
+	log.Printf("Categories in the index: %d", len(categoriesIndex))
 }
 
 func makeRouter() *mux.Router {
@@ -126,6 +131,7 @@ func makeRouter() *mux.Router {
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/robots.txt", robotsHandler)
 	r.HandleFunc("/{name}", storyHandler)
+	r.HandleFunc("/t/{name}", categoryHandler)
 	const staticPathPrefix = "/static"
 	r.PathPrefix(staticPathPrefix).Handler(http.StripPrefix(staticPathPrefix, http.FileServer(http.Dir(staticLoc))))
 	return r
@@ -144,12 +150,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	storiesMutex.Unlock()
 	type PageData struct {
 		Stories []ListItem
-		Tags    map[string][]*story.Story
 	}
 	err := renderTemplate("list", w, PageContext{
 		Data: PageData{
 			Stories: items,
-			Tags:    tagsIndex,
 		},
 	})
 	check(err)
@@ -160,11 +164,41 @@ func storyHandler(w http.ResponseWriter, r *http.Request) {
 	defer storiesMutex.Unlock()
 	if s, ok := nameIndex[mux.Vars(r)["name"]]; ok {
 		err := renderTemplate("content", w, PageContext{
-			Name:    s.Name,
-			Title:   s.Title,
-			Date:    s.Date,
-			Content: s.Content,
-			Tags:    s.Tags,
+			Name:       s.Name,
+			Title:      s.Title,
+			Date:       s.Date,
+			Content:    s.Content,
+			Categories: s.Categories,
+		})
+		check(err)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func categoryHandler(w http.ResponseWriter, r *http.Request) {
+	cat := strings.ToLower(mux.Vars(r)["name"])
+	if storiesInCategory, ok := categoriesIndex[cat]; ok {
+		type ListItem struct {
+			Path  string
+			Story *story.Story
+		}
+		var items []ListItem
+		storiesMutex.Lock()
+		for i, s := range storiesInCategory {
+			items = append(items, ListItem{Path: s.Name, Story: &stories[i]})
+		}
+		storiesMutex.Unlock()
+		type PageData struct {
+			Category string
+			Stories  []ListItem
+		}
+		err := renderTemplate("category", w, PageContext{
+			Title: fmt.Sprintf("Category: \"%s\"", cat),
+			Data: PageData{
+				Category: cat,
+				Stories:  items,
+			},
 		})
 		check(err)
 	} else {
@@ -192,7 +226,7 @@ func handleEvent(event fsnotify.Event) {
 			renderTemplates(templLoc)
 		}
 		if strings.HasPrefix(event.Name, storiesLoc) {
-			readStories(storiesLoc)
+			processStories(storiesLoc, *prodEnv)
 		}
 	}
 }

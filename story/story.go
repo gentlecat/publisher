@@ -43,18 +43,19 @@ const (
 )
 
 type Story struct {
-	Name    string
-	Title   string
-	Date    time.Time
-	Content template.HTML
-	Tags    []string
+	Name       string
+	IsDraft    bool
+	Title      string
+	Date       time.Time
+	Content    template.HTML
+	Categories []string
 }
 
 type metadata struct {
-	Title   string   `json:"title"`
-	DateStr string   `json:"date"`
-	Hidden  bool     `json:"hidden"`
-	Tags    []string `json:"tags"`
+	Title      string   `json:"title"`
+	IsDraft    bool     `json:"draft"`
+	DateStr    string   `json:"date"`
+	Categories []string `json:"categories"`
 }
 
 type storiesSlice []Story
@@ -65,7 +66,7 @@ func (a storiesSlice) Less(i, j int) bool { return a[i].Date.After(a[j].Date) }
 
 // ReadAll reads all stories in a specified directory and returns a list of
 // them. The list is sorted by publication date.
-func ReadAll(storiesDir string) (stories []Story, err error) {
+func ReadAll(storiesDir string, skipDrafts bool) (stories []Story, err error) {
 	files, err := ioutil.ReadDir(storiesDir)
 	if err != nil {
 		return stories, err
@@ -79,6 +80,9 @@ func ReadAll(storiesDir string) (stories []Story, err error) {
 		// TODO: Consider not failing the whole process, but skipping bad file instead
 		if err != nil {
 			return stories, err
+		}
+		if skipDrafts && s.IsDraft {
+			continue
 		}
 		stories = append(stories, s)
 	}
@@ -108,16 +112,15 @@ func read(storyFilePath string) (s Story, err error) {
 	if err != nil {
 		return s, errors.New(fmt.Sprint("failed to parse metadata JSON: ", err))
 	}
+	s.IsDraft = m.IsDraft
 	s.Name = clearPath(storyFilePath)
 	s.Title = m.Title
-	s.Tags = lower_all(m.Tags)
+	s.Categories = lower_all(m.Categories)
 	s.Date, err = time.Parse(dateFormat, m.DateStr)
 	if err != nil {
 		return s, err
 	}
-	if len(parts) < 2 { // Content is not defined
-		s.Content = ""
-	} else {
+	if len(parts) == 2 {
 		s.Content = parseContent(parts[1])
 	}
 	return s, err
