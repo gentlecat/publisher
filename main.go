@@ -22,27 +22,31 @@ var (
 	listenHost = flag.String("host", "127.0.0.1", "Host to listen on")
 	listenPort = flag.Int("port", 8080, "Port to listen on")
 
-	storiesMutex sync.Mutex
+	contentLoc = "content"
+	storiesLoc = filepath.Join(contentLoc, "stories")
+	templLoc   = filepath.Join(contentLoc, "templates")
+	staticLoc  = filepath.Join(contentLoc, "static")
+
 	stories      []story.Story
-	storiesIndex map[string]*story.Story
+	storiesMutex sync.Mutex
 
-	templatesMutex sync.Mutex
+	nameIndex map[string]*story.Story
+	tagsIndex map[string][]*story.Story
+
+	// TODO: See if template stuff and serving needs to be in separate modules
 	templates      map[string]*template.Template
-
-	contentLoc    = "content"
-	metadatalFile = filepath.Join(contentLoc, "metadata.json")
-	storiesLoc    = filepath.Join(contentLoc, "stories")
-	templLoc      = filepath.Join(contentLoc, "templates")
-	staticLoc     = filepath.Join(contentLoc, "static")
+	templatesMutex sync.Mutex
 )
 
-type Page struct {
-	Name    string
+// PageContext contains actual content that gets sent to a template.
+type PageContext struct {
 	Title   string
-	Date    time.Time
 	Content template.HTML
-	Tags    []string
-	Data    interface{}
+	Data    interface{} // Additional data that doesn't fit into any other field.
+	// TODO: Perhaps look into moving fields defined below into `Data`:
+	Name string
+	Tags []string
+	Date time.Time
 }
 
 func main() {
@@ -53,7 +57,7 @@ func main() {
 
 	log.Println("Initializing...")
 	renderTemplates(templLoc)
-	readStories(metadatalFile, storiesLoc)
+	readStories(storiesLoc)
 
 	watcher, err := fsnotify.NewWatcher()
 	check(err)
@@ -68,8 +72,6 @@ func main() {
 			}
 		}
 	}()
-	err = watcher.Add(metadatalFile)
-	check(err)
 	err = watcher.Add(storiesLoc)
 	check(err)
 	err = watcher.Add(templLoc)
@@ -97,16 +99,26 @@ func renderTemplates(location string) {
 	))
 }
 
-func readStories(metadatalFile, storiesLoc string) {
+func readStories(storiesLoc string) {
 	log.Println("Parsing stories...")
 	defer log.Println("Done!")
 	storiesMutex.Lock()
 	defer storiesMutex.Unlock()
-	stories = story.ReadStories(metadatalFile, storiesLoc)
-	storiesIndex = make(map[string]*story.Story)
+	s, err := story.ReadAll(storiesLoc)
+	check(err)
+	stories = s
+
+	// Generating indexes
+	nameIndex = make(map[string]*story.Story)
+	tagsIndex = make(map[string][]*story.Story)
 	for i, s := range stories {
-		storiesIndex[s.Name] = &stories[i]
+		nameIndex[s.Name] = &stories[i]
+		for _, t := range s.Tags {
+			tagsIndex[t] = append(tagsIndex[t], &stories[i])
+		}
 	}
+	log.Printf("Names in the index: %d", len(nameIndex))
+	log.Printf("Tags in the index: %d", len(tagsIndex))
 }
 
 func makeRouter() *mux.Router {
@@ -130,8 +142,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		items = append(items, ListItem{Path: s.Name, Story: &stories[i]})
 	}
 	storiesMutex.Unlock()
-	err := renderTemplate("list", w, Page{
-		Data: items,
+	type PageData struct {
+		Stories []ListItem
+		Tags    map[string][]*story.Story
+	}
+	err := renderTemplate("list", w, PageContext{
+		Data: PageData{
+			Stories: items,
+			Tags:    tagsIndex,
+		},
 	})
 	check(err)
 }
@@ -139,8 +158,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func storyHandler(w http.ResponseWriter, r *http.Request) {
 	storiesMutex.Lock()
 	defer storiesMutex.Unlock()
-	if s, ok := storiesIndex[mux.Vars(r)["name"]]; ok {
-		err := renderTemplate("content", w, Page{
+	if s, ok := nameIndex[mux.Vars(r)["name"]]; ok {
+		err := renderTemplate("content", w, PageContext{
 			Name:    s.Name,
 			Title:   s.Title,
 			Date:    s.Date,
@@ -172,15 +191,14 @@ func handleEvent(event fsnotify.Event) {
 		if strings.HasPrefix(event.Name, templLoc) {
 			renderTemplates(templLoc)
 		}
-		if strings.HasPrefix(event.Name, metadatalFile) || strings.HasPrefix(event.Name, storiesLoc) {
-			readStories(metadatalFile, storiesLoc)
+		if strings.HasPrefix(event.Name, storiesLoc) {
+			readStories(storiesLoc)
 		}
 	}
 }
 
 func updateContentLoc(directoryPath string) {
 	contentLoc = filepath.Clean(directoryPath)
-	metadatalFile = filepath.Join(contentLoc, "metadata.json")
 	storiesLoc = filepath.Join(contentLoc, "stories")
 	templLoc = filepath.Join(contentLoc, "templates")
 	staticLoc = filepath.Join(contentLoc, "static")

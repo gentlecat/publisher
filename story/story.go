@@ -2,20 +2,24 @@ package story
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
+	"path"
+	"sort"
 	"strings"
 	"time"
-	"github.com/russross/blackfriday"
-	"sort"
 )
 
 const (
 	dateFormat         = "2006-Jan-02" // UTC
 	markdownFileFormat = "md"
+
+	metadataSeparator = "\n+++\n"
 
 	markdownExtensions = 0 |
 		blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
@@ -46,53 +50,94 @@ type Story struct {
 	Tags    []string
 }
 
-type storyDateSorter []Story
-
-func (a storyDateSorter) Len() int           { return len(a) }
-func (a storyDateSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a storyDateSorter) Less(i, j int) bool { return a[i].Date.After(a[j].Date) }
-
 type metadata struct {
-	Stories []storyMetadata `json:"stories"`
+	Title   string   `json:"title"`
+	DateStr string   `json:"date"`
+	Hidden  bool     `json:"hidden"`
+	Tags    []string `json:"tags"`
 }
 
-type storyMetadata struct {
-	Name      string   `json:"name"`
-	Title     string   `json:"title"`
-	DateStr   string   `json:"date"`
-	Published bool     `json:"published"`
-	Tags      []string `json:"tags"`
+type storiesSlice []Story
+
+func (a storiesSlice) Len() int           { return len(a) }
+func (a storiesSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a storiesSlice) Less(i, j int) bool { return a[i].Date.After(a[j].Date) }
+
+// ReadAll reads all stories in a specified directory and returns a list of
+// them. The list is sorted by publication date.
+func ReadAll(storiesDir string) (stories []Story, err error) {
+	files, err := ioutil.ReadDir(storiesDir)
+	if err != nil {
+		return stories, err
+	}
+	for _, f := range files {
+		if !isStoryFile(f) {
+			continue
+		}
+		log.Printf("Reading file: %s\n", f.Name())
+		s, err := read(path.Join(storiesDir, f.Name()))
+		// TODO: Consider not failing the whole process, but skipping bad file instead
+		if err != nil {
+			return stories, err
+		}
+		stories = append(stories, s)
+	}
+	sort.Sort(storiesSlice(stories))
+	return stories, nil
 }
 
-func ReadStories(metadataFile, storiesDir string) []Story {
-	metadataJSON, err := ioutil.ReadFile(metadataFile)
-	check(err)
-	var metadata metadata
-	err = json.Unmarshal(metadataJSON, &metadata)
-	check(err)
+func isStoryFile(f os.FileInfo) bool {
+	if f.IsDir() || !strings.HasSuffix(strings.ToLower(f.Name()), "."+markdownFileFormat) {
+		return false
+	}
+	return true
+}
 
-	var stories []Story
-
-	for _, story := range metadata.Stories {
-		storyContentPath := filepath.Join(storiesDir, story.Name+"."+markdownFileFormat)
-		if _, err := os.Stat(storyContentPath); os.IsNotExist(err) {
-			log.Fatalf("Can't find story: %s", story.Name)
-		}
-		if story.Published {
-			date, err := time.Parse(dateFormat, story.DateStr)
-			check(err)
-			stories = append(stories, Story{
-				Name:    story.Name,
-				Title:   story.Title,
-				Date:    date,
-				Content: parseStoryContent(storyContentPath),
-				Tags:    lower_all(story.Tags),
-			})
-		}
+func read(storyFilePath string) (s Story, err error) {
+	data, err := ioutil.ReadFile(storyFilePath)
+	if err != nil {
+		return s, err
 	}
 
-	sort.Sort(storyDateSorter(stories))
-	return stories
+	parts := strings.SplitN(string(data), metadataSeparator, 2)
+	if len(parts) > 2 {
+		return s, errors.New("story file hasn't been split up correctly")
+	}
+
+	m, err := parseMetadata(parts[0])
+	if err != nil {
+		return s, errors.New(fmt.Sprint("failed to parse metadata JSON: ", err))
+	}
+	s.Name = clearPath(storyFilePath)
+	s.Title = m.Title
+	s.Tags = lower_all(m.Tags)
+	s.Date, err = time.Parse(dateFormat, m.DateStr)
+	if err != nil {
+		return s, err
+	}
+	if len(parts) < 2 { // Content is not defined
+		s.Content = ""
+	} else {
+		s.Content = parseContent(parts[1])
+	}
+	return s, err
+}
+
+func parseMetadata(metadataJSON string) (metadata, error) {
+	var m metadata
+	err := json.Unmarshal([]byte(metadataJSON), &m)
+	if err != nil {
+		return metadata{}, err
+	}
+	return m, nil
+}
+
+// clearPath removes path and format parts from the story path leaving only its name.
+func clearPath(filePath string) string {
+	_, file := path.Split(filePath)
+	const fileFormatSeparator = "."
+	formatParts := strings.Split(file, fileFormatSeparator)
+	return strings.Join(formatParts[:len(formatParts)-1], fileFormatSeparator)
 }
 
 func lower_all(strs []string) []string {
@@ -103,16 +148,8 @@ func lower_all(strs []string) []string {
 	return out
 }
 
-// ReadStory parses a story in markdown format and converts it to HTML.
-func parseStoryContent(filePath string) template.HTML {
-	data, err := ioutil.ReadFile(filePath)
-	check(err)
+// parseContent parses a story in markdown format and converts it to HTML.
+func parseContent(content string) template.HTML {
 	renderer := blackfriday.HtmlRenderer(commonHtmlFlags, "", "")
-	return template.HTML(blackfriday.Markdown(data, renderer, markdownExtensions))
-}
-
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
+	return template.HTML(blackfriday.Markdown([]byte(content), renderer, markdownExtensions))
 }
