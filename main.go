@@ -13,8 +13,10 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/mux"
+	"go.roman.zone/publisher/feeds"
 	"go.roman.zone/publisher/story"
 )
 
@@ -27,6 +29,9 @@ var (
 	storiesLoc = filepath.Join(contentLoc, "stories")
 	templLoc   = filepath.Join(contentLoc, "templates")
 	staticLoc  = filepath.Join(contentLoc, "static")
+	configLoc  = filepath.Join(contentLoc, "config.json")
+
+	config Configuration
 
 	stories      []story.Story
 	storiesMutex sync.Mutex
@@ -34,10 +39,16 @@ var (
 	nameIndex       map[string]*story.Story
 	categoriesIndex map[string][]*story.Story
 
+	rssFeed string
+
 	// TODO: See if template stuff and serving needs to be in separate modules
 	templates      map[string]*template.Template
 	templatesMutex sync.Mutex
 )
+
+type Configuration struct {
+	Feed feeds.FeedConfiguration
+}
 
 // PageContext contains actual content that gets sent to a template.
 type PageContext struct {
@@ -57,6 +68,11 @@ func main() {
 	}
 
 	log.Println("Initializing...")
+	var err error
+	config, err = readConfiguration(configLoc)
+	if err != nil {
+		log.Fatalf("Failed to read configuration file: %s", err)
+	}
 	renderTemplates(templLoc)
 	processStories(storiesLoc, *prodEnv) // drafts are ignored in production
 
@@ -82,6 +98,17 @@ func main() {
 	log.Printf("Starting server on http://%s...\n", listenAddr)
 	err = http.ListenAndServe(listenAddr, makeRouter())
 	check(err)
+}
+
+func readConfiguration(location string) (config Configuration, err error) {
+	file, err := os.Open(location)
+	if err != nil {
+		return
+	}
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	return
 }
 
 func renderTemplates(location string) {
@@ -113,6 +140,11 @@ func processStories(dir string, ignoreDrafts bool) {
 	check(err)
 	stories = s
 
+	rssFeed, err = feeds.GenerateRSS(stories, config.Feed)
+	if err != nil {
+		log.Printf("Failed to generate RSS feed: %s", err)
+	}
+
 	// Generating indexes
 	nameIndex = make(map[string]*story.Story)
 	categoriesIndex = make(map[string][]*story.Story)
@@ -129,6 +161,7 @@ func processStories(dir string, ignoreDrafts bool) {
 func makeRouter() *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", indexHandler)
+	r.HandleFunc("/rss", rssHandler)
 	r.HandleFunc("/robots.txt", robotsHandler)
 	r.HandleFunc("/{name}", storyHandler)
 	r.HandleFunc("/t/{name}", categoryHandler)
@@ -209,6 +242,11 @@ func categoryHandler(w http.ResponseWriter, r *http.Request) {
 func robotsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `User-agent: *
 Disallow: /static/`)
+}
+
+func rssHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(rssFeed))
+	w.Header().Set("Content-Type", "application/rss+xml")
 }
 
 func renderTemplate(name string, wr io.Writer, data interface{}) error {
