@@ -274,6 +274,7 @@ func updateContentLoc(directoryPath string) {
 	storiesLoc = filepath.Join(contentLoc, "stories")
 	templLoc = filepath.Join(contentLoc, "templates")
 	staticLoc = filepath.Join(contentLoc, "static")
+	configLoc  = filepath.Join(contentLoc, "config.json")
 }
 
 func check(err error) {
