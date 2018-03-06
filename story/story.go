@@ -115,7 +115,7 @@ func read(storyFilePath string) (s Story, err error) {
 	s.IsDraft = m.IsDraft
 	s.Name = clearPath(storyFilePath)
 	s.Title = m.Title
-	s.Categories = lower_all(m.Categories)
+	s.Categories = lowerAll(m.Categories)
 	s.Date, err = time.Parse(dateFormat, m.DateStr)
 	if err != nil {
 		return s, err
@@ -143,7 +143,7 @@ func clearPath(filePath string) string {
 	return strings.Join(formatParts[:len(formatParts)-1], fileFormatSeparator)
 }
 
-func lower_all(strs []string) []string {
+func lowerAll(strs []string) []string {
 	out := make([]string, len(strs))
 	for i, v := range strs {
 		out[i] = strings.ToLower(v)
