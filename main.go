@@ -1,8 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/mux"
+	"go.roman.zone/publisher/feeds"
+	"go.roman.zone/publisher/story"
 	"html/template"
 	"io"
 	"log"
@@ -12,12 +17,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"encoding/json"
-	"github.com/fsnotify/fsnotify"
-	"github.com/gorilla/mux"
-	"go.roman.zone/publisher/feeds"
-	"go.roman.zone/publisher/story"
 )
 
 var (
@@ -274,7 +273,7 @@ func updateContentLoc(directoryPath string) {
 	storiesLoc = filepath.Join(contentLoc, "stories")
 	templLoc = filepath.Join(contentLoc, "templates")
 	staticLoc = filepath.Join(contentLoc, "static")
-	configLoc  = filepath.Join(contentLoc, "config.json")
+	configLoc = filepath.Join(contentLoc, "config.json")
 }
 
 func check(err error) {
