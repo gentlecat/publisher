@@ -1,6 +1,0 @@
-.git
-.gitignore
-.github
-docker-compose.yml
-publisher
-Makefile

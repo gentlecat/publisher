@@ -43,12 +43,12 @@ const (
 )
 
 type Story struct {
-	Name       string
-	IsDraft    bool
-	Title      string
-	Date       time.Time
-	Content    template.HTML
-	Categories []string
+	Name            string
+	IsDraft         bool
+	Title           string
+	PublicationDate time.Time
+	Content         template.HTML
+	Tags            []string
 }
 
 type metadata struct {
@@ -62,14 +62,16 @@ type storiesSlice []Story
 
 func (a storiesSlice) Len() int           { return len(a) }
 func (a storiesSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a storiesSlice) Less(i, j int) bool { return a[i].Date.After(a[j].Date) }
+func (a storiesSlice) Less(i, j int) bool { return a[i].PublicationDate.After(a[j].PublicationDate) }
 
 // ReadAll reads all stories in a specified directory and returns a list of
 // them. The list is sorted by publication date.
-func ReadAll(storiesDir string, skipDrafts bool) (stories []Story, err error) {
+func ReadAll(storiesDir string, skipDrafts bool) (*[]Story, error) {
+	stories := make([]Story, 0)
+
 	files, err := ioutil.ReadDir(storiesDir)
 	if err != nil {
-		return stories, err
+		return &stories, err
 	}
 	for _, f := range files {
 		if !isStoryFile(f) {
@@ -79,7 +81,7 @@ func ReadAll(storiesDir string, skipDrafts bool) (stories []Story, err error) {
 		s, err := read(path.Join(storiesDir, f.Name()))
 		// TODO: Consider not failing the whole process, but skipping bad file instead
 		if err != nil {
-			return stories, err
+			return &stories, err
 		}
 		if skipDrafts && s.IsDraft {
 			continue
@@ -87,7 +89,7 @@ func ReadAll(storiesDir string, skipDrafts bool) (stories []Story, err error) {
 		stories = append(stories, s)
 	}
 	sort.Sort(storiesSlice(stories))
-	return stories, nil
+	return &stories, nil
 }
 
 func isStoryFile(f os.FileInfo) bool {
@@ -115,8 +117,8 @@ func read(storyFilePath string) (s Story, err error) {
 	s.IsDraft = m.IsDraft
 	s.Name = clearPath(storyFilePath)
 	s.Title = m.Title
-	s.Categories = lowerAll(m.Categories)
-	s.Date, err = time.Parse(dateFormat, m.DateStr)
+	s.Tags = lowerAll(m.Categories)
+	s.PublicationDate, err = time.Parse(dateFormat, m.DateStr)
 	if err != nil {
 		return s, err
 	}

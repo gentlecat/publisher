@@ -1,10 +1,10 @@
 module go.roman.zone/publisher
 
 require (
-	github.com/fsnotify/fsnotify v1.4.7
+	bou.ke/monkey v1.0.1 // indirect
 	github.com/gorilla/feeds v1.1.0
-	github.com/gorilla/mux v1.6.2
+	github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1
+	github.com/otiai10/mint v1.2.1 // indirect
 	github.com/russross/blackfriday v1.5.2
-
-	golang.org/x/sys v0.0.0-20181221143128-b4a75ba826a6 // indirect
+	github.com/stretchr/testify v1.3.0 // indirect
 )

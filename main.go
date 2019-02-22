@@ -4,41 +4,32 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/gorilla/mux"
-	"go.roman.zone/publisher/feeds"
+	"github.com/otiai10/copy"
+	"go.roman.zone/publisher/generator/details"
+	"go.roman.zone/publisher/generator/index"
+	"go.roman.zone/publisher/generator/robots"
+	"go.roman.zone/publisher/generator/rss"
 	"go.roman.zone/publisher/story"
 	"html/template"
-	"io"
 	"log"
-	"net/http"
 	"os"
+	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
 
 var (
-	listenHost = flag.String("host", "127.0.0.1", "Host to listen on")
-	listenPort = flag.Int("port", 8080, "Port to listen on")
-	prodEnv    = flag.Bool("prod", false, "Whether the server is running in production environment")
+	prodEnv    = flag.Bool("prod", false, "Whether the generator is running in production environment (if it is, draft stories won't be included)")
+	outputDir  = flag.String("out", "./out", "Output directory for the content")
+	contentLoc = flag.String("content", "./content", "Path to the content directory")
 
-	contentLoc = "content"
-	storiesLoc = filepath.Join(contentLoc, "stories")
-	templLoc   = filepath.Join(contentLoc, "templates")
-	staticLoc  = filepath.Join(contentLoc, "static")
-	configLoc  = filepath.Join(contentLoc, "config.json")
+	storiesLoc  string
+	templateLoc string
+	staticLoc   string
+	configLoc   string
 
 	config Configuration
-
-	stories      []story.Story
-	storiesMutex sync.Mutex
-
-	nameIndex       map[string]*story.Story
-	categoriesIndex map[string][]*story.Story
-
-	rssFeed string
 
 	// TODO: See if template stuff and serving needs to be in separate modules
 	templates      map[string]*template.Template
@@ -46,25 +37,20 @@ var (
 )
 
 type Configuration struct {
-	Feed feeds.FeedConfiguration
-}
-
-// PageContext contains actual content that gets sent to a template.
-type PageContext struct {
-	Title string
-	Data  interface{} // Additional data that doesn't fit into any other field.
-	// TODO: Perhaps look into moving fields defined below into `Data`:
-	Name       string
-	Content    template.HTML
-	Categories []string
-	Date       time.Time
+	Feed rss.FeedConfiguration
 }
 
 func main() {
 	flag.Parse()
-	if customContentLoc := os.Getenv("CONTENT_LOCATION"); customContentLoc != "" {
-		updateContentLoc(customContentLoc)
-	}
+
+	storiesLoc = filepath.Join(*contentLoc, "stories")
+	templateLoc = filepath.Join(*contentLoc, "templates")
+	staticLoc = filepath.Join(*contentLoc, "static")
+	configLoc = filepath.Join(*contentLoc, "config.json")
+
+	// Measuring the time it takes to execute
+	start := time.Now()
+	defer fmt.Println(time.Since(start))
 
 	log.Println("Initializing...")
 	var err error
@@ -72,31 +58,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read configuration file: %s", err)
 	}
-	renderTemplates(templLoc)
+
+	renderTemplates(templateLoc)
 	processStories(storiesLoc, *prodEnv) // drafts are ignored in production
-
-	watcher, err := fsnotify.NewWatcher()
-	check(err)
-	defer watcher.Close()
-	go func() {
-		for {
-			select {
-			case event := <-watcher.Events:
-				handleEvent(event)
-			case err := <-watcher.Errors:
-				log.Println("Watcher error:", err)
-			}
-		}
-	}()
-	err = watcher.Add(storiesLoc)
-	check(err)
-	err = watcher.Add(templLoc)
-	check(err)
-
-	listenAddr := fmt.Sprintf("%s:%d", *listenHost, *listenPort)
-	log.Printf("Starting server on http://%s...\n", listenAddr)
-	err = http.ListenAndServe(listenAddr, makeRouter())
-	check(err)
 }
 
 func readConfiguration(location string) (config Configuration, err error) {
@@ -113,9 +77,12 @@ func readConfiguration(location string) (config Configuration, err error) {
 func renderTemplates(location string) {
 	log.Println("Rendering templates...")
 	defer log.Println("Done!")
+
 	templatesMutex.Lock()
 	defer templatesMutex.Unlock()
+
 	templates = make(map[string]*template.Template)
+
 	templates["content"] = template.Must(template.ParseFiles(
 		filepath.Join(location, "content.html"),
 		filepath.Join(location, "base.html"),
@@ -131,149 +98,20 @@ func renderTemplates(location string) {
 }
 
 func processStories(dir string, ignoreDrafts bool) {
-	log.Println("Parsing stories...")
+	log.Println("Processing stories...")
 	defer log.Println("Done!")
-	storiesMutex.Lock()
-	defer storiesMutex.Unlock()
-	s, err := story.ReadAll(dir, ignoreDrafts)
+
+	stories, err := story.ReadAll(dir, ignoreDrafts)
 	check(err)
-	stories = s
 
-	rssFeed, err = feeds.GenerateRSS(stories, config.Feed)
-	if err != nil {
-		log.Printf("Failed to generate RSS feed: %s", err)
-	}
+	// Creating the output directory before writing anything there
+	check(os.MkdirAll(*outputDir, os.ModePerm))
 
-	// Generating indexes
-	nameIndex = make(map[string]*story.Story)
-	categoriesIndex = make(map[string][]*story.Story)
-	for i, s := range stories {
-		nameIndex[s.Name] = &stories[i]
-		for _, t := range s.Categories {
-			categoriesIndex[t] = append(categoriesIndex[t], &stories[i])
-		}
-	}
-	log.Printf("Names in the index: %d", len(nameIndex))
-	log.Printf("Categories in the index: %d", len(categoriesIndex))
-}
-
-func makeRouter() *mux.Router {
-	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/", indexHandler)
-	r.HandleFunc("/rss", rssHandler)
-	r.HandleFunc("/robots.txt", robotsHandler)
-	r.HandleFunc("/{name}", storyHandler)
-	r.HandleFunc("/t/{name}", categoryHandler)
-	const staticPathPrefix = "/static"
-	r.PathPrefix(staticPathPrefix).Handler(http.StripPrefix(staticPathPrefix, http.FileServer(http.Dir(staticLoc))))
-	return r
-}
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	type ListItem struct {
-		Path  string
-		Story *story.Story
-	}
-	var items []ListItem
-	storiesMutex.Lock()
-	for i, s := range stories {
-		items = append(items, ListItem{Path: s.Name, Story: &stories[i]})
-	}
-	storiesMutex.Unlock()
-	type PageData struct {
-		Stories []ListItem
-	}
-	err := renderTemplate("list", w, PageContext{
-		Data: PageData{
-			Stories: items,
-		},
-	})
-	check(err)
-}
-
-func storyHandler(w http.ResponseWriter, r *http.Request) {
-	storiesMutex.Lock()
-	defer storiesMutex.Unlock()
-	if s, ok := nameIndex[mux.Vars(r)["name"]]; ok {
-		err := renderTemplate("content", w, PageContext{
-			Name:       s.Name,
-			Title:      s.Title,
-			Date:       s.Date,
-			Content:    s.Content,
-			Categories: s.Categories,
-		})
-		check(err)
-	} else {
-		http.NotFound(w, r)
-	}
-}
-
-func categoryHandler(w http.ResponseWriter, r *http.Request) {
-	cat := strings.ToLower(mux.Vars(r)["name"])
-	if storiesInCategory, ok := categoriesIndex[cat]; ok {
-		type ListItem struct {
-			Path  string
-			Story *story.Story
-		}
-		var items []ListItem
-		storiesMutex.Lock()
-		for i, s := range storiesInCategory {
-			items = append(items, ListItem{Path: s.Name, Story: &stories[i]})
-		}
-		storiesMutex.Unlock()
-		type PageData struct {
-			Category string
-			Stories  []ListItem
-		}
-		err := renderTemplate("category", w, PageContext{
-			Title: fmt.Sprintf("Category: \"%s\"", cat),
-			Data: PageData{
-				Category: cat,
-				Stories:  items,
-			},
-		})
-		check(err)
-	} else {
-		http.NotFound(w, r)
-	}
-}
-
-func robotsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, `User-agent: *
-Disallow: /static/`)
-}
-
-func rssHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(rssFeed))
-	w.Header().Set("Content-Type", "application/rss+xml")
-}
-
-func renderTemplate(name string, wr io.Writer, data interface{}) error {
-	templatesMutex.Lock()
-	defer templatesMutex.Unlock()
-	return templates[name].ExecuteTemplate(wr, "base", data)
-}
-
-func handleEvent(event fsnotify.Event) {
-	if (event.Op&fsnotify.Create == fsnotify.Create) ||
-		(event.Op&fsnotify.Remove == fsnotify.Remove) ||
-		(event.Op&fsnotify.Write == fsnotify.Write) {
-		log.Printf("Detected change in file: %s", event.Name)
-		if strings.HasPrefix(event.Name, templLoc) {
-			renderTemplates(templLoc)
-		}
-		if strings.HasPrefix(event.Name, storiesLoc) {
-			processStories(storiesLoc, *prodEnv)
-		}
-	}
-}
-
-func updateContentLoc(directoryPath string) {
-	contentLoc = filepath.Clean(directoryPath)
-	storiesLoc = filepath.Join(contentLoc, "stories")
-	templLoc = filepath.Join(contentLoc, "templates")
-	staticLoc = filepath.Join(contentLoc, "static")
-	configLoc = filepath.Join(contentLoc, "config.json")
+	index.GenerateIndexPage(stories, templates["list"], *outputDir)
+	details.GenerateDetailsPages(stories, templates["content"], *outputDir)
+	rss.GenerateRSS(config.Feed, stories, *outputDir)
+	robots.GenerateRobotsTxtFile(*outputDir)
+	check(copy.Copy(staticLoc, path.Join(*outputDir, "static")))
 }
 
 func check(err error) {
