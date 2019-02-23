@@ -43,6 +43,10 @@ type Configuration struct {
 func main() {
 	flag.Parse()
 
+	if _, err := os.Stat(*contentLoc); os.IsNotExist(err) {
+		log.Fatalf("Content directory (%s) is missing.", *contentLoc);
+	}
+
 	storiesLoc = filepath.Join(*contentLoc, "stories")
 	templateLoc = filepath.Join(*contentLoc, "templates")
 	staticLoc = filepath.Join(*contentLoc, "static")
