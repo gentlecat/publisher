@@ -5,7 +5,7 @@
 First, make sure you have [Go](https://golang.org/doc/install) installed. After that, install *publisher* locally:
 
 ```bash
-$ go get go.roman.zone/publisher
+$ go get -u go.roman.zone/publisher
 ```
 
 ## Usage
