@@ -1,4 +1,4 @@
-run : fmt build
+run : fmt
 	go run -race main.go
 
 fmt :
@@ -6,7 +6,7 @@ fmt :
 	go fmt ./...
 
 build :
-	go build
+	go build -o ./build/publisher
 
 serve:
 	cd out && python3 -m http.server 8080
