@@ -1,0 +1,13 @@
+{
+  "Feed": {
+    "Title": "Example",
+    "Description": "This is an example!",
+    "Author": {
+      "Name": "Example Author",
+      "Email": "feed@example.com"
+    },
+    "Backlink": {
+      "Href": "https://example.com"
+    }
+  }
+}

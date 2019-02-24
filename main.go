@@ -95,10 +95,6 @@ func renderTemplates(location string) {
 		filepath.Join(location, "list.html"),
 		filepath.Join(location, "base.html"),
 	))
-	templates["category"] = template.Must(template.ParseFiles(
-		filepath.Join(location, "category.html"),
-		filepath.Join(location, "base.html"),
-	))
 }
 
 func processStories(dir string, ignoreDrafts bool) {

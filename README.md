@@ -16,3 +16,5 @@ $ publisher \
     -out "~/fancy_website/public" \
     -prod
 ```
+
+Check *example-content* directory for an example of how content structure should look like.

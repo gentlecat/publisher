@@ -1,0 +1,29 @@
+{{define "base"}}
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  {{if .Title}}
+    <title>{{.Title}} - Example Website</title>
+  {{else}}
+    <title>Example Website</title>
+    <meta name="description" content="Example website." />
+  {{end}}
+
+  <link rel="stylesheet" href="/static/styles/main.css" />
+</head>
+
+<body>
+  
+  <header>
+    <h1>Example website</h1>
+  </header>
+  
+  <div class="content">
+    {{template "content" .}}
+  </div>
+
+</body>
+
+</html>
+{{end}}
