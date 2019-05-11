@@ -35,6 +35,7 @@ func CheckedFileWriter(path string, content []byte) {
 	_, err = f.Write(content)
 	check(err, path)
 }
+
 func check(e error, filePath string) {
 	if e != nil {
 		log.Fatalf("Failed to write file %s", filePath)
