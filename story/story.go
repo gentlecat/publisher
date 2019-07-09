@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/russross/blackfriday"
 )
 
 const (
@@ -79,9 +80,9 @@ func ReadAll(storiesDir string, skipDrafts bool) (*[]Story, error) {
 		}
 		log.Printf("Reading file: %s\n", f.Name())
 		s, err := read(path.Join(storiesDir, f.Name()))
-		// TODO: Consider not failing the whole process, but skipping bad file instead
 		if err != nil {
-			return &stories, err
+			log.Printf("Failed to read file: %s. Error: %s\n", f.Name(), err)
+			continue
 		}
 		if skipDrafts && s.IsDraft {
 			continue

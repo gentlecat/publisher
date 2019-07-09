@@ -3,11 +3,12 @@ package details
 import (
 	"bytes"
 	"fmt"
-	"go.roman.zone/publisher/generator"
-	"go.roman.zone/publisher/story"
 	"html/template"
 	"log"
 	"path"
+
+	"go.roman.zone/publisher/generator"
+	"go.roman.zone/publisher/story"
 )
 
 func GenerateDetailsPages(stories *[]story.Story, tpl *template.Template, outputDir string) {
