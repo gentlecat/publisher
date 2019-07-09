@@ -1,3 +1,7 @@
+clean :
+	-rm -r build
+	-rm -r out
+
 run : fmt
 	go run -race main.go
 
@@ -5,7 +9,8 @@ fmt :
 	$(info Reformatting all source files...)
 	go fmt ./...
 
-build :
+build : clean
+	-rm -r ./build
 	go build -o ./build/publisher
 
 serve:
