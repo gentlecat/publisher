@@ -3,6 +3,7 @@ workflow "Build workflow" {
   resolves = [
     "Publish the image",
     "Docker Registry",
+    "Go test",
   ]
 }
 
@@ -21,4 +22,9 @@ action "Publish the image" {
   uses = "actions/docker/cli@0c53e4a"
   needs = ["Build the image"]
   args = "push rtsk/publisher"
+}
+
+action "Go test" {
+  uses = "actions/setup-go@419ae75c254126fa6ae3e3ef573ce224a919b8fe"
+  runs = "go test ./... -bench ."
 }
