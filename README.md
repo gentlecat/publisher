@@ -1,4 +1,4 @@
-# Publisher [![Travis CI](https://img.shields.io/travis/gentlecat/go-bomb.svg?style=flat-square)](https://travis-ci.org/gentlecat/publisher)
+# Publisher [![Travis CI](https://img.shields.io/travis/gentlecat/publisher.svg?style=flat-square)](https://travis-ci.org/gentlecat/publisher)
 
 ## Installation
 
