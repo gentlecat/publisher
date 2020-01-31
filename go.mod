@@ -8,3 +8,5 @@ require (
 	github.com/russross/blackfriday v1.5.2
 	github.com/stretchr/testify v1.3.0 // indirect
 )
+
+go 1.13
