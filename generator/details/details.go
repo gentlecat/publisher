@@ -10,6 +10,7 @@ import (
 	"path"
 )
 
+// GenerateDetailsPages generates a page for a specific story.
 func GenerateDetailsPages(stories *[]reader.Story, tpl *template.Template, outputDir string) {
 	log.Println("Generating details pages...")
 	defer log.Println("Finished generating all details pages!")

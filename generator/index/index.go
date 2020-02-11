@@ -10,6 +10,7 @@ import (
 	"path"
 )
 
+// GenerateIndexPage renders the index page of the website which lists all the stories.
 func GenerateIndexPage(stories *[]reader.Story, tpl *template.Template, outputDir string) {
 	log.Println("Generating index page...")
 	defer log.Println("Finished generating the index page!")

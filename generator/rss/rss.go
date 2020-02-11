@@ -17,6 +17,7 @@ type FeedConfiguration struct {
 	Backlink    feeds.Link
 }
 
+// GenerateRSS generates an RSS feed file.
 func GenerateRSS(config FeedConfiguration, stories *[]reader.Story, outputDir string) {
 	log.Println("Generating the RSS feed...")
 	defer log.Println("Finished generating the RSS feed!")
