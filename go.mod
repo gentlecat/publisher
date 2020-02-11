@@ -5,7 +5,8 @@ require (
 	github.com/gorilla/feeds v1.1.0
 	github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1
 	github.com/otiai10/mint v1.2.1 // indirect
-	github.com/russross/blackfriday v1.5.2
+	github.com/russross/blackfriday v2.0.0+incompatible
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
 )
 

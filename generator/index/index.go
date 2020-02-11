@@ -3,14 +3,14 @@ package index
 import (
 	"bytes"
 	"fmt"
-	"go.roman.zone/publisher/generator"
-	"go.roman.zone/publisher/story"
+	"go.roman.zone/publisher/reader"
+	"go.roman.zone/publisher/writer"
 	"html/template"
 	"log"
 	"path"
 )
 
-func GenerateIndexPage(stories *[]story.Story, tpl *template.Template, outputDir string) {
+func GenerateIndexPage(stories *[]reader.Story, tpl *template.Template, outputDir string) {
 	log.Println("Generating index page...")
 	defer log.Println("Finished generating the index page!")
 
@@ -18,7 +18,7 @@ func GenerateIndexPage(stories *[]story.Story, tpl *template.Template, outputDir
 
 	type ListItem struct {
 		Path  string
-		Story *story.Story
+		Story *reader.Story
 	}
 	var items []ListItem
 
@@ -26,16 +26,16 @@ func GenerateIndexPage(stories *[]story.Story, tpl *template.Template, outputDir
 		items = append(items, ListItem{Path: s.Name, Story: &(*stories)[i]})
 	}
 	type PageData struct {
+		Title   string
 		Stories []ListItem
 	}
 
-	if err := tpl.ExecuteTemplate(&templateOutput, "base", generator.PageContext{
-		Data: PageData{
-			Stories: items,
-		},
+	if err := tpl.ExecuteTemplate(&templateOutput, "base", PageData{
+		Title:   "",
+		Stories: items,
 	}); err != nil {
 		log.Fatalf("Failed to render index page: %v", err)
 	}
 
-	generator.CheckedFileWriter(path.Join(outputDir, fmt.Sprintf("index.html")), templateOutput.Bytes())
+	writer.WriteFile(path.Join(outputDir, fmt.Sprintf("index.html")), templateOutput.Bytes())
 }
