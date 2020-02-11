@@ -12,4 +12,4 @@ env:
   - GO111MODULE=on
 
 script:
-  - go test ./... -bench .
+  - make test

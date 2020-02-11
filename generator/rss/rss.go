@@ -3,8 +3,8 @@ package rss
 import (
 	"fmt"
 	"github.com/gorilla/feeds"
-	"go.roman.zone/publisher/generator"
-	"go.roman.zone/publisher/story"
+	"go.roman.zone/publisher/reader"
+	"go.roman.zone/publisher/writer"
 	"log"
 	"path"
 	"time"
@@ -17,7 +17,7 @@ type FeedConfiguration struct {
 	Backlink    feeds.Link
 }
 
-func GenerateRSS(config FeedConfiguration, stories *[]story.Story, outputDir string) {
+func GenerateRSS(config FeedConfiguration, stories *[]reader.Story, outputDir string) {
 	log.Println("Generating the RSS feed...")
 	defer log.Println("Finished generating the RSS feed!")
 
@@ -43,5 +43,5 @@ func GenerateRSS(config FeedConfiguration, stories *[]story.Story, outputDir str
 		log.Fatalf("Failed to generate the RSS feed: %v", err)
 	}
 
-	generator.CheckedFileWriter(path.Join(outputDir, fmt.Sprintf("rss.xml")), []byte(rss))
+	writer.WriteFile(path.Join(outputDir, fmt.Sprintf("rss.xml")), []byte(rss))
 }

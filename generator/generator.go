@@ -1,43 +1,43 @@
 package generator
 
 import (
+	"github.com/otiai10/copy"
+	"go.roman.zone/publisher/generator/details"
+	"go.roman.zone/publisher/generator/index"
+	"go.roman.zone/publisher/generator/robots"
+	"go.roman.zone/publisher/generator/rss"
+	"go.roman.zone/publisher/reader"
 	"html/template"
 	"log"
 	"os"
-	"time"
+	"path"
 )
 
-type Output struct {
-	Content  []byte
-	FileType string
+type WebsiteGeneratorConfig struct {
+	IndexTemplate   *template.Template
+	DetailsTemplate *template.Template
+
+	StaticFilesLocation string
+
+	RSSFeedConfig rss.FeedConfiguration
 }
 
-type ContentGenerator interface {
-	generate() []Output
-}
+func (c *WebsiteGeneratorConfig) GenerateWebsite(stories *[]reader.Story, outputDir string) {
+	// Creating the output directory before writing anything there
+	err := os.MkdirAll(outputDir, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// PageContext contains actual content that gets sent to a template.
-type PageContext struct {
-	Title string
-	Data  interface{} // Additional data that doesn't fit into any other field.
-	// TODO: Perhaps look into moving fields defined below into `Data`:
-	Name    string
-	Content template.HTML
-	Tags    []string
-	Date    time.Time
-}
+	index.GenerateIndexPage(stories, c.IndexTemplate, outputDir)
+	details.GenerateDetailsPages(stories, c.DetailsTemplate, outputDir)
 
-func CheckedFileWriter(path string, content []byte) {
-	f, err := os.Create(path)
-	check(err, path)
-	defer f.Close()
+	rss.GenerateRSS(c.RSSFeedConfig, stories, outputDir)
 
-	_, err = f.Write(content)
-	check(err, path)
-}
+	robots.GenerateRobotsTxtFile(outputDir)
 
-func check(e error, filePath string) {
-	if e != nil {
-		log.Fatalf("Failed to write file %s", filePath)
+	err = copy.Copy(c.StaticFilesLocation, path.Join(outputDir, "static"))
+	if err != nil {
+		log.Fatal(err)
 	}
 }
