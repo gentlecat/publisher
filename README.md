@@ -17,4 +17,4 @@ $ publisher \
     -prod
 ```
 
-Check *example-content* directory for an example of how content structure should look like.
+Check *example-content* directory for an example of how content structure should look like. You can easily build the example by running `make build-example`.
