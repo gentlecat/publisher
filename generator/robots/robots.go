@@ -1,14 +1,14 @@
 package robots
 
 import (
+	"fmt"
 	"go.roman.zone/publisher/writer"
-	"log"
 	"path"
 )
 
 func GenerateRobotsTxtFile(outputDir string) {
-	log.Println("Generating robots.txt file...")
-	defer log.Println("Finished generating robots.txt file!")
+	fmt.Println("> Generating the robots.txt file...")
+	defer fmt.Println("  Finished generating the robots.txt file!")
 
 	content := `User-agent: *
 Disallow: /static/`

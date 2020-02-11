@@ -12,8 +12,8 @@ import (
 
 // GenerateIndexPage renders the index page of the website which lists all the stories.
 func GenerateIndexPage(stories *[]reader.Story, tpl *template.Template, outputDir string) {
-	log.Println("Generating index page...")
-	defer log.Println("Finished generating the index page!")
+	fmt.Println("> Generating the index page...")
+	defer fmt.Println("  Finished generating the index page!")
 
 	var templateOutput bytes.Buffer
 

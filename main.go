@@ -47,7 +47,9 @@ func main() {
 	start := time.Now()
 	defer fmt.Println(time.Since(start))
 
-	log.Println("Initializing...")
+	fmt.Println("Generating the website...")
+	defer fmt.Println("Done!")
+
 	var err error
 	config, err = readConfiguration(configLoc)
 	if err != nil {
@@ -69,8 +71,7 @@ func readConfiguration(location string) (config Configuration, err error) {
 }
 
 func processStories(dir string, skipDrafts bool) {
-	log.Println("Processing stories...")
-	defer log.Println("Done!")
+	fmt.Println("> Processing stories...")
 
 	r := reader.NewReader()
 	r.SkipDrafts = skipDrafts
@@ -79,15 +80,15 @@ func processStories(dir string, skipDrafts bool) {
 	check(err)
 
 	generatorConfig := generator.WebsiteGeneratorConfig{
-		IndexTemplate:       generateTemplate("index.html"),
-		DetailsTemplate:     generateTemplate("details.html"),
+		IndexTemplate:       prepareTemplate("index.html"),
+		DetailsTemplate:     prepareTemplate("details.html"),
 		StaticFilesLocation: staticLoc,
 		RSSFeedConfig:       config.Feed,
 	}
 	generatorConfig.GenerateWebsite(stories, *outputDir)
 }
 
-func generateTemplate(fileName string) *template.Template {
+func prepareTemplate(fileName string) *template.Template {
 	return template.Must(template.ParseFiles(
 		filepath.Join(templateLoc, "base.html"),
 		filepath.Join(templateLoc, fileName),
