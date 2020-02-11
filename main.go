@@ -1,3 +1,9 @@
+// Publisher is a lightweight (by my standards) static website generator. Most
+// of it is made for building my own websites, however all of it is meant to be
+// reusable for different kinds of websites.
+//
+// Main purpose is to support blog-like websites, but you can obviously rewrite
+// parts which don't work for your particular project.
 package main
 
 import (
@@ -27,6 +33,10 @@ var (
 	config Configuration
 )
 
+// Configuration struct represents the expected structure of configuration file.
+//
+// Configuration file itself is expected to be in the content directory and be
+// named `config.json`.
 type Configuration struct {
 	Feed rss.FeedConfiguration
 }
