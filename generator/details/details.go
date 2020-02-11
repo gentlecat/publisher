@@ -12,8 +12,8 @@ import (
 
 // GenerateDetailsPages generates a page for a specific story.
 func GenerateDetailsPages(stories *[]reader.Story, tpl *template.Template, outputDir string) {
-	log.Println("Generating details pages...")
-	defer log.Println("Finished generating all details pages!")
+	fmt.Println("> Generating details pages...")
+	defer fmt.Println("  Generated all details pages!")
 
 	for _, s := range *stories {
 		generateStoryFile(s, tpl, outputDir)
@@ -21,7 +21,7 @@ func GenerateDetailsPages(stories *[]reader.Story, tpl *template.Template, outpu
 }
 
 func generateStoryFile(s reader.Story, tpl *template.Template, outputDir string) {
-	log.Printf("Generating details page for %s", s.Name)
+	fmt.Printf("  - %s\n", s.Name)
 
 	var templateOutput bytes.Buffer
 

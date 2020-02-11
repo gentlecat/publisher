@@ -61,7 +61,7 @@ func (r *Configuration) ReadAll(storiesDir string) (*[]Story, error) {
 		if !r.isStoryFile(f) {
 			continue
 		}
-		log.Printf("Reading file: %s\n", f.Name())
+		fmt.Printf("  - %s\n", f.Name())
 		s, err := r.read(path.Join(storiesDir, f.Name()))
 		if err != nil {
 			log.Printf("Failed to read file: %s. Error: %s\n", f.Name(), err)

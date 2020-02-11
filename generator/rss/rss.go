@@ -19,8 +19,8 @@ type FeedConfiguration struct {
 
 // GenerateRSS generates an RSS feed file.
 func GenerateRSS(config FeedConfiguration, stories *[]reader.Story, outputDir string) {
-	log.Println("Generating the RSS feed...")
-	defer log.Println("Finished generating the RSS feed!")
+	fmt.Println("> Generating the RSS feed...")
+	defer fmt.Println("  Finished generating the RSS feed!")
 
 	feed := &feeds.Feed{
 		Title:       config.Title,
