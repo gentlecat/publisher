@@ -20,7 +20,7 @@ type Configuration struct {
 	DateFormat string
 
 	// StoryFileFormat specifies expected file format for the files which are
-	// going to be parsed. No dot necessary For example, "md".
+	// going to be parsed. No dot necessary. For example, "md".
 	StoryFileFormat string
 
 	// MetadataSeparator specifies the string that's used to separate metadata
