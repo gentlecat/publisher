@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"github.com/otiai10/copy"
 	"go.roman.zone/publisher/generator/details"
 	"go.roman.zone/publisher/generator/index"
@@ -14,29 +15,58 @@ import (
 )
 
 type WebsiteGeneratorConfig struct {
+	// IsProd value indicates whether the generator is running in production
+	// environment. If it is, draft stories won't be included in the generated
+	// website.
+	IsProd bool
+
+	StoriesDir string
+	StaticDir  string
+
+	// OutputDir indicates output directory for the website files. At the end of
+	// the execution output will be set up in a way that can be used on pretty
+	// much any static website hosting.
+	OutputDir string
+
 	IndexTemplate   *template.Template
 	DetailsTemplate *template.Template
 
-	StaticFilesLocation string
-
-	RSSFeedConfig rss.FeedConfiguration
+	RSSFeedConfiguration rss.FeedConfiguration
 }
 
-func (c *WebsiteGeneratorConfig) GenerateWebsite(stories *[]reader.Story, outputDir string) {
+func (c *WebsiteGeneratorConfig) GenerateWebsite() {
+
+	if _, err := os.Stat(c.StoriesDir); os.IsNotExist(err) {
+		log.Fatalf("Stories directory (%s) is missing.", c.StoriesDir)
+	}
+
 	// Creating the output directory before writing anything there
-	err := os.MkdirAll(outputDir, os.ModePerm)
+	err := os.MkdirAll(c.OutputDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	index.GenerateIndexPage(stories, c.IndexTemplate, outputDir)
-	details.GenerateDetailsPages(stories, c.DetailsTemplate, outputDir)
+	fmt.Println("> Processing stories...")
+	r := reader.NewReader()
+	r.SkipDrafts = c.IsProd
+	stories, err := r.ReadAll(c.StoriesDir)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	rss.GenerateRSS(c.RSSFeedConfig, stories, outputDir)
+	generateAll(stories, c)
+	copyStaticFiles(c)
+}
 
-	robots.GenerateRobotsTxtFile(outputDir)
+func generateAll(stories *[]reader.Story, c *WebsiteGeneratorConfig) {
+	index.GenerateIndexPage(stories, c.IndexTemplate, c.OutputDir)
+	details.GenerateDetailsPages(stories, c.DetailsTemplate, c.OutputDir)
+	rss.GenerateRSS(c.RSSFeedConfiguration, stories, c.OutputDir)
+	robots.GenerateRobotsTxtFile(c.OutputDir)
+}
 
-	err = copy.Copy(c.StaticFilesLocation, path.Join(outputDir, "static"))
+func copyStaticFiles(c *WebsiteGeneratorConfig) {
+	err := copy.Copy(c.StaticDir, path.Join(c.OutputDir, "static"))
 	if err != nil {
 		log.Fatal(err)
 	}
