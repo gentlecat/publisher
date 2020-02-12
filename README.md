@@ -2,10 +2,10 @@
 
 ## Installation
 
-First, make sure you have [Go](https://golang.org/doc/install) installed. After that, install *publisher* locally:
+First, make sure you have [Go](https://golang.org/doc/install) installed. After that, install the *publisher* itself locally:
 
 ```bash
-$ go get -u go.roman.zone/publisher
+$ go get -u go.roman.zone/publisher/cmd/publisher
 ```
 
 ## Usage

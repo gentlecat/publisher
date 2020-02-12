@@ -14,7 +14,7 @@ fmt :
 	go fmt ./...
 
 build : clean fmt
-	go build -o ./build/publisher
+	go build -o ./build/publisher go.roman.zone/publisher/cmd/publisher
 
 build-example : build
 	./build/publisher \
