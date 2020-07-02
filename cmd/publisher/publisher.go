@@ -14,13 +14,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"go.roman.zone/publisher/generator"
-	"go.roman.zone/publisher/generator/rss"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.roman.zone/publisher/generator"
+	"go.roman.zone/publisher/generator/rss"
 )
 
 var (

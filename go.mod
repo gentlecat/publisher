@@ -1,13 +1,12 @@
 module go.roman.zone/publisher
 
 require (
-	bou.ke/monkey v1.0.1 // indirect
-	github.com/gorilla/feeds v1.1.0
-	github.com/otiai10/copy v0.0.0-20180813032824-7e9a647135a1
-	github.com/otiai10/mint v1.2.1 // indirect
-	github.com/russross/blackfriday v2.0.0+incompatible
+	github.com/gorilla/feeds v1.1.1
+	github.com/kr/pretty v0.2.0 // indirect
+	github.com/otiai10/copy v1.2.0
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
 )
 
 go 1.13

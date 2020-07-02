@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	bf "github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	bf "github.com/russross/blackfriday/v2"
 )
 
 type Configuration struct {

@@ -3,11 +3,12 @@ package index
 import (
 	"bytes"
 	"fmt"
-	"go.roman.zone/publisher/reader"
-	"go.roman.zone/publisher/writer"
 	"html/template"
 	"log"
 	"path"
+
+	"go.roman.zone/publisher/reader"
+	"go.roman.zone/publisher/writer"
 )
 
 // GenerateIndexPage renders the index page of the website which lists all the stories.

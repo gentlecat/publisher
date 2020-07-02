@@ -3,11 +3,12 @@ package details
 import (
 	"bytes"
 	"fmt"
-	"go.roman.zone/publisher/reader"
-	"go.roman.zone/publisher/writer"
 	"html/template"
 	"log"
 	"path"
+
+	"go.roman.zone/publisher/reader"
+	"go.roman.zone/publisher/writer"
 )
 
 // GenerateDetailsPages generates a page for a specific story.

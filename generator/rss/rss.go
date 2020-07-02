@@ -2,12 +2,13 @@ package rss
 
 import (
 	"fmt"
-	"github.com/gorilla/feeds"
-	"go.roman.zone/publisher/reader"
-	"go.roman.zone/publisher/writer"
 	"log"
 	"path"
 	"time"
+
+	"github.com/gorilla/feeds"
+	"go.roman.zone/publisher/reader"
+	"go.roman.zone/publisher/writer"
 )
 
 type FeedConfiguration struct {

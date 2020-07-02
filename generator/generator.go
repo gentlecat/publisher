@@ -2,16 +2,17 @@ package generator
 
 import (
 	"fmt"
+	"html/template"
+	"log"
+	"os"
+	"path"
+
 	"github.com/otiai10/copy"
 	"go.roman.zone/publisher/generator/details"
 	"go.roman.zone/publisher/generator/index"
 	"go.roman.zone/publisher/generator/robots"
 	"go.roman.zone/publisher/generator/rss"
 	"go.roman.zone/publisher/reader"
-	"html/template"
-	"log"
-	"os"
-	"path"
 )
 
 type WebsiteGeneratorConfig struct {

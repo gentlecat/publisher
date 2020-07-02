@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"time"
 
-	bf "github.com/russross/blackfriday"
+	bf "github.com/russross/blackfriday/v2"
 )
 
 const (

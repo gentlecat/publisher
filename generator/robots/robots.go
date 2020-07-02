@@ -2,8 +2,9 @@ package robots
 
 import (
 	"fmt"
-	"go.roman.zone/publisher/writer"
 	"path"
+
+	"go.roman.zone/publisher/writer"
 )
 
 func GenerateRobotsTxtFile(outputDir string) {
