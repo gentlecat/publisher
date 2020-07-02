@@ -1,7 +1,12 @@
 {
     "title": "Example story",
     "date": "2000-Jan-12",
-    "categories": ["example"]
+    "categories": ["example"],
+    "extras": {
+        "example": {
+            "something": 123
+        }
+    }
 }
 
 +++

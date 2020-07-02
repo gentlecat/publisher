@@ -98,11 +98,14 @@ func (r *Configuration) read(storyFilePath string) (s Story, err error) {
 	if err != nil {
 		return s, errors.New(fmt.Sprint("failed to parse metadata JSON: ", err))
 	}
+
 	s.IsDraft = m.IsDraft
 	s.Name = clearPath(storyFilePath)
 	s.Title = m.Title
 	s.Tags = lowerAll(m.Categories)
 	s.PublicationDate, err = time.Parse(r.DateFormat, m.DateStr)
+	s.Extras = m.Extras
+
 	if err != nil {
 		return s, err
 	}

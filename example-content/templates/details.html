@@ -3,5 +3,7 @@
   <h1 class="title">{{.Title}}</h1>
   <div class="date">{{.PublicationDate.Format "Jan 02, 2006"}}</div>
   <div class="text">{{.Content}}</div>
+  <hr />
+  <div class="everything">{{index (index .Extras "example") "something"}}</div>
 </div>
 {{end}}

@@ -37,11 +37,16 @@ type Story struct {
 	PublicationDate time.Time
 	Content         template.HTML
 	Tags            []string
+
+	// Extras is a container for any additional data that's supposed to be
+	// passed to the templates and doesn't fit into any other field.
+	Extras interface{}
 }
 
 type metadata struct {
-	Title      string   `json:"title"`
-	IsDraft    bool     `json:"draft"`
-	DateStr    string   `json:"date"`
-	Categories []string `json:"categories"`
+	Title      string      `json:"title"`
+	IsDraft    bool        `json:"draft"`
+	DateStr    string      `json:"date"`
+	Categories []string    `json:"categories"`
+	Extras     interface{} `json:"extras"`
 }
