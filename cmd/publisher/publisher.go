@@ -1,5 +1,5 @@
 // Publisher is a lightweight (by my standards) static website generator. Most
-// of it is made for building my own websites, however all of it is meant to be
+// of it is made for building my own projects, however all of it is meant to be
 // reusable for different kinds of websites.
 //
 // Main purpose is to support blog-like websites, but you can obviously rewrite
