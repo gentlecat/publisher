@@ -1,4 +1,4 @@
-# Publisher [![Travis CI](https://img.shields.io/travis/gentlecat/publisher.svg?style=flat-square)](https://travis-ci.org/gentlecat/publisher)
+# Publisher ![Go tests](https://github.com/gentlecat/publisher/workflows/Go%20tests/badge.svg)
 
 ## Installation
 
