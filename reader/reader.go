@@ -128,13 +128,8 @@ func parseMetadata(metadataJSON string) (metadata, error) {
 
 // parseContent parses a story in markdown format and converts it to HTML.
 func parseContent(content string) template.HTML {
-	return template.HTML(
-		bf.Run(
-			[]byte(content),
-			bf.WithExtensions(markdownExtensions),
-			bf.WithRenderer(
-				bf.NewHTMLRenderer(
-					bf.HTMLRendererParameters{Flags: htmlRendererParams}))))
+	renderer := bf.HtmlRenderer(htmlRendererParams, "", "")
+	return template.HTML(bf.Markdown([]byte(content), renderer, markdownExtensions))
 }
 
 // clearPath removes path and format parts from the story path leaving only its name.
