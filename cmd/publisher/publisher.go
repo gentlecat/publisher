@@ -43,7 +43,7 @@ func main() {
 
 	start := time.Now()
 	fmt.Println("Generating the website...")
-	defer fmt.Printf("Done in %v!", time.Since(start))
+	defer fmt.Printf("Done in %v!\n", time.Since(start))
 
 	config, err := readConfiguration(filepath.Join(*contentDir, "config.json"))
 	if err != nil {
