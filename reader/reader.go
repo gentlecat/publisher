@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	bf "github.com/russross/blackfriday"
+	bf "github.com/russross/blackfriday/v2"
 )
 
 type Configuration struct {
@@ -128,8 +128,7 @@ func parseMetadata(metadataJSON string) (metadata, error) {
 
 // parseContent parses a story in markdown format and converts it to HTML.
 func parseContent(content string) template.HTML {
-	renderer := bf.HtmlRenderer(htmlRendererParams, "", "")
-	return template.HTML(bf.Markdown([]byte(content), renderer, markdownExtensions))
+	return template.HTML(bf.Run([]byte(content), bf.WithRenderer(renderer), bf.WithExtensions(markdownExtensions)))
 }
 
 // clearPath removes path and format parts from the story path leaving only its name.
