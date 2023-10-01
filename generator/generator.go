@@ -21,8 +21,9 @@ type WebsiteGeneratorConfig struct {
 	// website.
 	IsProd bool
 
-	StoriesDir string
-	StaticDir  string
+	StoriesDir    string
+	StaticDir     string
+	RobotsTxtPath string
 
 	// OutputDir indicates output directory for the website files. At the end of
 	// the execution output will be set up in a way that can be used on pretty
@@ -63,7 +64,7 @@ func generateAll(stories *[]reader.Story, c *WebsiteGeneratorConfig) {
 	index.GenerateIndexPage(stories, c.IndexTemplate, c.OutputDir)
 	details.GenerateDetailsPages(stories, c.DetailsTemplate, c.OutputDir)
 	rss.GenerateRSS(c.RSSFeedConfiguration, stories, c.OutputDir)
-	robots.GenerateRobotsTxtFile(c.OutputDir)
+	robots.GenerateRobotsTxtFile(c.RobotsTxtPath, c.OutputDir)
 }
 
 func copyStaticFiles(c *WebsiteGeneratorConfig) {

@@ -56,8 +56,9 @@ func main() {
 		IsProd:    *prodEnv,
 		OutputDir: *outputDir,
 
-		StoriesDir: filepath.Join(*contentDir, "stories"),
-		StaticDir:  filepath.Join(*contentDir, "static"),
+		StoriesDir:    filepath.Join(*contentDir, "stories"),
+		StaticDir:     filepath.Join(*contentDir, "static"),
+		RobotsTxtPath: filepath.Join(*contentDir, "robots.txt"),
 
 		IndexTemplate:        prepareTemplate(templateDir, "index.html"),
 		DetailsTemplate:      prepareTemplate(templateDir, "details.html"),
