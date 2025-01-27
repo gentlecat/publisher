@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -54,7 +53,7 @@ func NewReader() *Configuration {
 func (r *Configuration) ReadAll(storiesDir string) (*[]Story, error) {
 	stories := make([]Story, 0)
 
-	files, err := ioutil.ReadDir(storiesDir)
+	files, err := os.ReadDir(storiesDir)
 	if err != nil {
 		return &stories, err
 	}
@@ -77,7 +76,7 @@ func (r *Configuration) ReadAll(storiesDir string) (*[]Story, error) {
 	return &stories, nil
 }
 
-func (r *Configuration) isStoryFile(f os.FileInfo) bool {
+func (r *Configuration) isStoryFile(f os.DirEntry) bool {
 	if f.IsDir() || !strings.HasSuffix(strings.ToLower(f.Name()), "."+r.StoryFileFormat) {
 		return false
 	}
@@ -85,7 +84,7 @@ func (r *Configuration) isStoryFile(f os.FileInfo) bool {
 }
 
 func (r *Configuration) read(storyFilePath string) (s Story, err error) {
-	data, err := ioutil.ReadFile(storyFilePath)
+	data, err := os.ReadFile(storyFilePath)
 	if err != nil {
 		return s, err
 	}
@@ -126,7 +125,7 @@ func parseMetadata(metadataJSON string) (metadata, error) {
 	return m, nil
 }
 
-// parseContent parses a story in markdown format and converts it to HTML.
+// parseContent parses a story in Markdown format and converts it to HTML.
 func parseContent(content string) template.HTML {
 	return template.HTML(bf.Run([]byte(content), bf.WithRenderer(renderer), bf.WithExtensions(markdownExtensions)))
 }
@@ -147,7 +146,7 @@ func lowerAll(strs []string) []string {
 	return out
 }
 
-// storiesSlice is wrapper type for a slice of stories, which provides sorting
+// storiesSlice is a wrapper type for a slice of stories, which provides sorting
 // capability (by publication date).
 type storiesSlice []Story
 

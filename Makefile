@@ -1,21 +1,21 @@
-clean :
+clean:
 	-rm -r build
 	-rm -r out
 
-fmt :
+go-fmt:
 	$(info Reformatting all source files...)
-	go fmt ./...
+	cd main && go fmt ./...
 
-build : clean fmt
-	go build -o ./build/publisher go.roman.zone/publisher/cmd/publisher
+go-build: clean go-fmt
+	cd main && go build -o ../build/publisher go.roman.zone/publisher/cmd/publisher
 
-build-example : build
+go-test: go-build
+	cd main && go test ./... -bench .
+
+build-example: go-build
 	./build/publisher \
 		-content "example-content" \
 		-out "out"
-
-test : build-example
-	go test ./... -bench .
 
 serve:
 	cd out && python3 -m http.server 8080
