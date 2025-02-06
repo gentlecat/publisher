@@ -1,4 +1,4 @@
-# Publisher ![Go tests](https://github.com/gentlecat/publisher/workflows/Go%20tests/badge.svg)
+# Publisher
 
 ## Installation
 
