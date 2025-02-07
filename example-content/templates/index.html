@@ -1,12 +1,13 @@
 {{define "content"}}
-  <ul id="articles-list">
+<ul id="articles-list">
     {{range .Stories}}
-      <li>
+    <li>
         <div class="title">
-          <div class="title"><a href="/{{.Path}}">{{.Story.Title}}</a></div>
+            <div class="title"><a href="/{{.Path}}">{{.Story.Title}}</a></div>
         </div>
         <div class="date">{{.Story.PublicationDate.Format "Jan 01, 2006"}}</div>
-      </li>
+        <div class="category"><em>{{.Story.Category}}</em></div>
+    </li>
     {{end}}
-  </ul>
+</ul>
 {{end}}

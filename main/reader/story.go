@@ -43,6 +43,7 @@ type Story struct {
 	Title           string
 	PublicationDate time.Time
 	Content         template.HTML
+	Category        string
 	Tags            []string
 
 	// Extras is a container for any additional data that's supposed to be
@@ -51,9 +52,10 @@ type Story struct {
 }
 
 type metadata struct {
-	Title      string      `json:"title"`
-	IsDraft    bool        `json:"draft"`
-	DateStr    string      `json:"date"`
-	Categories []string    `json:"categories"`
-	Extras     interface{} `json:"extras"`
+	Title    string      `json:"title"`
+	IsDraft  bool        `json:"draft"`
+	DateStr  string      `json:"date"`
+	Category string      `json:"category"`
+	Tags     []string    `json:"tags"`
+	Extras   interface{} `json:"extras"`
 }

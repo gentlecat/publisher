@@ -102,7 +102,8 @@ func (r *Configuration) read(storyFilePath string) (s Story, err error) {
 	s.IsDraft = m.IsDraft
 	s.Name = clearPath(storyFilePath)
 	s.Title = m.Title
-	s.Tags = lowerAll(m.Categories)
+	s.Category = m.Category
+	s.Tags = lowerAll(m.Tags)
 	s.PublicationDate, err = time.Parse(r.DateFormat, m.DateStr)
 	s.Extras = m.Extras
 
