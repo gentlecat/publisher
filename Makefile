@@ -20,5 +20,8 @@ build-example: go-build
 		-content "example-content" \
 		-out "out"
 
+build-container:
+	docker build -t publisher .
+
 serve:
 	cd out && python3 -m http.server 8080
