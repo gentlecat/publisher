@@ -10,10 +10,10 @@ You can build the example by running `make build-example-docker` or `make build-
 Install Docker or compatible container runtime, then run:
 
 ```shell
-docker run -v ~/fancy_website/content:/content ghcr.io/gentlecat/publisher:latest
+docker run -v ./example-content:/content ghcr.io/gentlecat/publisher:latest
 ```
 
-Built content will be in the *~/fancy_website/content/out* directory.
+Built content will be in the *./example-content/out* directory.
 
 ### Build from source
 
@@ -27,7 +27,7 @@ Then run the command to generate the content:
 
 ```shell
 $ publisher \
-    -content "~/fancy_website/content" \
-    -out "~/fancy_website/public" \
+    -content "./example-content" \
+    -out "./example-content/out" \
     -prod
 ```
