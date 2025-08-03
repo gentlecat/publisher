@@ -3,7 +3,7 @@
 ## Usage
 
 Check *example-content* directory for an example of what the content structure should look like.
-You can build the example by running `make build-example`.
+You can build the example by running `make build-example-docker` or `make build-example`.
 
 ### Docker image build
 

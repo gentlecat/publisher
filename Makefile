@@ -20,6 +20,9 @@ build-example: go-build
 		-content "example-content" \
 		-out "out"
 
+build-example-docker:
+	docker run -v ./example-content/:/content ghcr.io/gentlecat/publisher:latest
+
 build-container:
 	docker build -t publisher .
 
