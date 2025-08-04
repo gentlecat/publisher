@@ -29,5 +29,5 @@ Then run the command to generate the content:
 $ publisher \
     -content "./example-content" \
     -out "./example-content/out" \
-    -prod
+    -draft
 ```

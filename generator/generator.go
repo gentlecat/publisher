@@ -16,10 +16,10 @@ import (
 )
 
 type WebsiteGeneratorConfig struct {
-	// IsProd value indicates whether the generator is running in production
+	// IsDraft value indicates whether the generator is running in the draft
 	// environment. If it is, draft stories won't be included in the generated
 	// website.
-	IsProd bool
+	IsDraft bool
 
 	StoriesDir    string
 	StaticDir     string
@@ -49,8 +49,12 @@ func (c *WebsiteGeneratorConfig) GenerateWebsite() {
 	}
 
 	fmt.Println("> Processing stories...")
+	if c.IsDraft {
+		fmt.Println("> ⚠️ DRAFT MODE")
+	}
+
 	r := reader.NewReader()
-	r.SkipDrafts = c.IsProd
+	r.SkipDrafts = !c.IsDraft
 	stories, err := r.ReadAll(c.StoriesDir)
 	if err != nil {
 		log.Fatal(err)

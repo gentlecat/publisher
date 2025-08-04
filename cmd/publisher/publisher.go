@@ -25,15 +25,14 @@ import (
 )
 
 var (
-	prodEnv    = flag.Bool("prod", false, "Whether the generator is running in production environment (if it is, draft stories won't be included)")
+	draftEnv   = flag.Bool("draft", false, "Whether the generator is running in draft environment (if it is, draft stories will be included)")
 	outputDir  = flag.String("out", "./out", "Output directory for the content")
 	contentDir = flag.String("content", "./content", "Path to the content directory")
 )
 
-// Configuration struct represents the expected structure of configuration file.
+// Configuration struct represents the expected structure of the configuration file.
 //
-// Configuration file itself is expected to be in the content directory and be
-// named `config.json`.
+// The configuration file itself is expected to be in the content directory and be named `config.json`.
 type Configuration struct {
 	Feed rss.FeedConfiguration
 }
@@ -53,7 +52,7 @@ func main() {
 	templateDir := filepath.Join(*contentDir, "templates")
 
 	generatorConfig := generator.WebsiteGeneratorConfig{
-		IsProd:    *prodEnv,
+		IsDraft:   *draftEnv,
 		OutputDir: *outputDir,
 
 		StoriesDir:    filepath.Join(*contentDir, "stories"),

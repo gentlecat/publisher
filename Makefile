@@ -20,11 +20,36 @@ build-example: go-build
 		-content "example-content" \
 		-out "out"
 
-build-example-docker:
-	docker run -v ./example-content/:/content ghcr.io/gentlecat/publisher:latest
-
 build-container:
 	docker build -t publisher .
 
+build-example-docker-local: clean build-container
+	docker run \
+		-v ./example-content/:/content \
+		-v ./out/:/output \
+		publisher \
+		publisher -content /content -out /output
+
+build-example-docker-local-draft: clean build-container
+	docker run \
+		-v ./example-content/:/content \
+		-v ./out/:/output \
+		publisher \
+		publisher -content /content -out /output -draft
+
+build-example-docker: clean
+	docker run \
+		-v ./example-content/:/content \
+		-v ./out/:/output \
+		ghcr.io/gentlecat/publisher:latest \
+		publisher -content /content -out /output
+
+build-example-docker-draft: clean
+	docker run \
+		-v ./example-content/:/content \
+		-v ./out/:/output \
+		ghcr.io/gentlecat/publisher:latest \
+		publisher -content /content -out /output -draft
+
 serve:
-	cd out && python3 -m http.server 8080
+	cd ./out && python3 -m http.server 8080
