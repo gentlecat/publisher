@@ -48,9 +48,10 @@ func (c *WebsiteGeneratorConfig) GenerateWebsite() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("> Processing stories...")
 	if c.IsDraft {
-		fmt.Println("> ⚠️ DRAFT MODE")
+		fmt.Println("> Processing stories [⚠️ DRAFT MODE ⚠️]... ")
+	} else {
+		fmt.Println("> Processing stories...")
 	}
 
 	r := reader.NewReader()
