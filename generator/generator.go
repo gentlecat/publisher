@@ -12,6 +12,7 @@ import (
 	"go.roman.zone/publisher/generator/index"
 	"go.roman.zone/publisher/generator/robots"
 	"go.roman.zone/publisher/generator/rss"
+	"go.roman.zone/publisher/generator/sitemap"
 	"go.roman.zone/publisher/reader"
 )
 
@@ -69,6 +70,7 @@ func generateAll(stories *[]reader.Story, c *WebsiteGeneratorConfig) {
 	index.GenerateIndexPage(stories, c.IndexTemplate, c.OutputDir)
 	details.GenerateDetailsPages(stories, c.DetailsTemplate, c.OutputDir)
 	rss.GenerateRSS(c.RSSFeedConfiguration, stories, c.OutputDir)
+	sitemap.GenerateSitemap(c.RSSFeedConfiguration, stories, c.OutputDir)
 	robots.GenerateRobotsTxtFile(c.RobotsTxtPath, c.OutputDir)
 }
 
