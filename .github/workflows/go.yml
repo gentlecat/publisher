@@ -1,5 +1,7 @@
 name: Go tests
 on: [push]
+permissions:
+  contents: read
 jobs:
 
   build:
