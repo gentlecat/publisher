@@ -1,9 +1,10 @@
 module go.roman.zone/publisher
 
-go 1.23
+go 1.26
 
 require (
 	github.com/gorilla/feeds v1.2.0
+	github.com/gorilla/mux v1.8.1
 	github.com/otiai10/copy v1.14.1
 	github.com/russross/blackfriday/v2 v2.1.0
 )
