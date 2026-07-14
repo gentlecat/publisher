@@ -67,11 +67,27 @@ func (c *WebsiteGeneratorConfig) GenerateWebsite() {
 }
 
 func generateAll(stories *[]reader.Story, c *WebsiteGeneratorConfig) {
-	index.GenerateIndexPage(stories, c.IndexTemplate, c.OutputDir)
+	// Every story that made it this far gets its own page, but unlisted stories
+	// are kept out of the listings, the feed, and the sitemap.
+	listed := listedStories(stories)
+
+	index.GenerateIndexPage(&listed, c.IndexTemplate, c.OutputDir)
 	details.GenerateDetailsPages(stories, c.DetailsTemplate, c.OutputDir)
-	rss.GenerateRSS(c.RSSFeedConfiguration, stories, c.OutputDir)
-	sitemap.GenerateSitemap(c.RSSFeedConfiguration, stories, c.OutputDir)
+	rss.GenerateRSS(c.RSSFeedConfiguration, &listed, c.OutputDir)
+	sitemap.GenerateSitemap(c.RSSFeedConfiguration, &listed, c.OutputDir)
 	robots.GenerateRobotsTxtFile(c.RobotsTxtPath, c.OutputDir)
+}
+
+// listedStories returns the stories that should appear in listings such as the
+// index page, the RSS feed, and the sitemap.
+func listedStories(stories *[]reader.Story) []reader.Story {
+	listed := make([]reader.Story, 0, len(*stories))
+	for _, s := range *stories {
+		if s.IsListed() {
+			listed = append(listed, s)
+		}
+	}
+	return listed
 }
 
 func copyStaticFiles(c *WebsiteGeneratorConfig) {

@@ -15,21 +15,20 @@ import (
 	bf "github.com/russross/blackfriday/v2"
 )
 
+// ContentFileName is the name of the Markdown file holding a story's content
+// inside its bundle directory.
+const ContentFileName = "index.md"
+
+// MetadataFileName is the name of the JSON file holding a story's metadata
+// inside its bundle directory.
+const MetadataFileName = "metadata.json"
+
 type Configuration struct {
 	// DateFormat is the format used to parse creation date of a story.
 	DateFormat string
 
-	// StoryFileFormat specifies expected file format for the files which are
-	// going to be parsed. No dot necessary. For example, "md".
-	StoryFileFormat string
-
-	// MetadataSeparator specifies the string that's used to separate metadata
-	// part of the story file and the rest of the content. Metadata is expected
-	// to be first, followed by the specified separator, followed by content.
-	MetadataSeparator string
-
-	// SkipDrafts indicates whether draft stories should be ignored. This flag
-	// will be set in the metadata of each story.
+	// SkipDrafts indicates whether stories with a "draft" status should be
+	// ignored.
 	//
 	// Useful for separation between prod and local environments.
 	SkipDrafts bool
@@ -42,32 +41,32 @@ type StoryReader interface {
 
 func NewReader() *Configuration {
 	return &Configuration{
-		DateFormat:        "2006-Jan-02",
-		StoryFileFormat:   "md",
-		MetadataSeparator: "\n+++\n",
+		DateFormat: "2006-Jan-02",
 	}
 }
 
 // ReadAll reads all stories in a specified directory and returns a list of
-// them. The list is sorted by publication date.
+// them. Each story is a bundle: a subdirectory containing a metadata file, a
+// content file, and any static assets. The list is sorted by publication date.
 func (r *Configuration) ReadAll(storiesDir string) (*[]Story, error) {
 	stories := make([]Story, 0)
 
-	files, err := os.ReadDir(storiesDir)
+	entries, err := os.ReadDir(storiesDir)
 	if err != nil {
 		return &stories, err
 	}
-	for _, f := range files {
-		if !r.isStoryFile(f) {
+	for _, e := range entries {
+		storyDir := path.Join(storiesDir, e.Name())
+		if !r.isStoryDir(e, storyDir) {
 			continue
 		}
-		fmt.Printf("  - %s\n", f.Name())
-		s, err := r.read(path.Join(storiesDir, f.Name()))
+		fmt.Printf("  - %s\n", e.Name())
+		s, err := r.read(storyDir)
 		if err != nil {
-			log.Printf("Failed to read file: %s. Error: %s\n", f.Name(), err)
+			log.Printf("Failed to read story: %s. Error: %s\n", e.Name(), err)
 			continue
 		}
-		if r.SkipDrafts && s.IsDraft {
+		if r.SkipDrafts && s.Status == StatusDraft {
 			continue
 		}
 		stories = append(stories, s)
@@ -76,31 +75,34 @@ func (r *Configuration) ReadAll(storiesDir string) (*[]Story, error) {
 	return &stories, nil
 }
 
-func (r *Configuration) isStoryFile(f os.DirEntry) bool {
-	if f.IsDir() || !strings.HasSuffix(strings.ToLower(f.Name()), "."+r.StoryFileFormat) {
+// isStoryDir reports whether the given directory entry is a story bundle. A
+// bundle is a directory containing a metadata file. Anything else (loose files
+// or directories used purely for grouping, such as an archive) is ignored.
+func (r *Configuration) isStoryDir(e os.DirEntry, storyDir string) bool {
+	if !e.IsDir() {
 		return false
 	}
-	return true
+	_, err := os.Stat(path.Join(storyDir, MetadataFileName))
+	return err == nil
 }
 
-func (r *Configuration) read(storyFilePath string) (s Story, err error) {
-	data, err := os.ReadFile(storyFilePath)
+func (r *Configuration) read(storyDir string) (s Story, err error) {
+	metadataData, err := os.ReadFile(path.Join(storyDir, MetadataFileName))
 	if err != nil {
 		return s, err
 	}
 
-	parts := strings.SplitN(string(data), r.MetadataSeparator, 2)
-	if len(parts) > 2 {
-		return s, errors.New("story file hasn't been split up correctly")
-	}
-
-	m, err := parseMetadata(parts[0])
+	m, err := parseMetadata(string(metadataData))
 	if err != nil {
 		return s, errors.New(fmt.Sprint("failed to parse metadata JSON: ", err))
 	}
 
-	s.IsDraft = m.IsDraft
-	s.Name = clearPath(storyFilePath)
+	s.Status, err = m.resolveStatus()
+	if err != nil {
+		return s, err
+	}
+	s.Name = path.Base(storyDir)
+	s.SourceDir = storyDir
 	s.Title = m.Title
 	s.Category = m.Category
 	s.Tags = lowerAll(m.Tags)
@@ -110,10 +112,14 @@ func (r *Configuration) read(storyFilePath string) (s Story, err error) {
 	if err != nil {
 		return s, err
 	}
-	if len(parts) == 2 {
-		s.Content = parseContent(parts[1])
+
+	content, err := os.ReadFile(path.Join(storyDir, ContentFileName))
+	if err != nil {
+		return s, fmt.Errorf("failed to read content file: %w", err)
 	}
-	return s, err
+	s.Content = parseContent(string(content))
+
+	return s, nil
 }
 
 // parseMetadata parses the metadata block of the file.
@@ -129,14 +135,6 @@ func parseMetadata(metadataJSON string) (metadata, error) {
 // parseContent parses a story in Markdown format and converts it to HTML.
 func parseContent(content string) template.HTML {
 	return template.HTML(bf.Run([]byte(content), bf.WithRenderer(renderer), bf.WithExtensions(markdownExtensions)))
-}
-
-// clearPath removes path and format parts from the story path leaving only its name.
-func clearPath(filePath string) string {
-	_, file := path.Split(filePath)
-	const fileFormatSeparator = "."
-	formatParts := strings.Split(file, fileFormatSeparator)
-	return strings.Join(formatParts[:len(formatParts)-1], fileFormatSeparator)
 }
 
 func lowerAll(strs []string) []string {

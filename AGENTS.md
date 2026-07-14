@@ -1,0 +1,1 @@
+- Always verify a change with a real build (`make build-example`), not just `go build`.
