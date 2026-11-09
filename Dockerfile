@@ -3,7 +3,7 @@ WORKDIR /usr/src/publisher
 COPY . .
 RUN go build -v -o bin/publisher go.roman.zone/publisher/cmd/publisher
 
-FROM docker.io/alpine:latest@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS runtime
+FROM docker.io/alpine:latest@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runtime
 #RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/publisher/bin/publisher /usr/local/bin/publisher
 WORKDIR /content
