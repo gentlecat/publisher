@@ -68,3 +68,7 @@ $ publisher \
     -out "./example-content/out" \
     -draft
 ```
+
+### Fonts
+
+The example uses [Charter](https://practicaltypography.com/charter.html) and [Spline Sans Mono](https://github.com/SorkinType/SplineSansMono). Their licences are in `example-content/static/fonts`.

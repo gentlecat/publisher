@@ -1,8 +1,10 @@
 {{define "base"}}
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   {{if .Title}}
     <title>{{.Title}} - Example Website</title>
   {{else}}
@@ -10,18 +12,24 @@
     <meta name="description" content="Example website." />
   {{end}}
 
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/static/fonts/charter_regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/static/styles/main.css" />
 </head>
 
 <body>
-  
-  <header>
-    <h1>Example website</h1>
+
+  <header class="site-header">
+    {{if .Title}}
+      <p class="site-name"><a href="/">Example website</a></p>
+    {{else}}
+      <h1 class="site-name">Example website</h1>
+    {{end}}
   </header>
-  
-  <div class="content">
+
+  <main class="content">
     {{template "content" .}}
-  </div>
+  </main>
 
 </body>
 

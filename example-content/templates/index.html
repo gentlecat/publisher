@@ -2,11 +2,9 @@
 <ul id="articles-list">
     {{range .Stories}}
     <li>
-        <div class="title">
-            <div class="title"><a href="/{{.Path}}">{{.Story.Title}}</a></div>
-        </div>
-        <div class="date">{{.Story.PublicationDate.Format "Jan 01, 2006"}}</div>
-        <div class="category"><em>{{.Story.Category}}</em></div>
+        <a class="title" href="/{{.Path}}">{{.Story.Title}}</a>
+        <time class="date" datetime="{{.Story.PublicationDate.Format "2006-01-02"}}">{{.Story.PublicationDate.Format "Jan 02, 2006"}}</time>
+        {{if .Story.Category}}<div class="category">{{.Story.Category}}</div>{{end}}
     </li>
     {{end}}
 </ul>

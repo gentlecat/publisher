@@ -1,9 +1,9 @@
 {{define "content"}}
-<div id="article-content">
+<article id="article-content">
   <h1 class="title">{{.Title}}</h1>
-  <div class="date">{{.PublicationDate.Format "Jan 02, 2006"}}</div>
+  <time class="date" datetime="{{.PublicationDate.Format "2006-01-02"}}">{{.PublicationDate.Format "Jan 02, 2006"}}</time>
   <div class="text">{{.Content}}</div>
   <hr />
-  <div class="everything">{{index (index .Extras "example") "something"}}</div>
-</div>
+  <div class="everything">Example extra: {{index (index .Extras "example") "something"}}</div>
+</article>
 {{end}}
